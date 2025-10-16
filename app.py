@@ -6,12 +6,14 @@ import os
 
 # --- Initialize Flask app ---
 app = Flask(__name__)
-CORS(app)
+
+# ✅ Configure CORS properly for live frontend access
+# Allow all origins and methods for simplicity (you can restrict later)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- Initialize Gemini assistant and database ---
 assistant = GeminiAssistant()
 db = TravelDatabase()
-
 
 # --- Routes ---
 
