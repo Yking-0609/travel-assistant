@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from agent import GeminiAssistant
-from database import TravelDatabase  # Import the new database class
+from database import TravelDatabase  # Import your database class
+import os
 
 # Create Flask app
 app = Flask(__name__)
@@ -31,9 +32,13 @@ def chat():
         return jsonify({"response": "Please type something."}), 400
 
     reply = assistant.ask(user_text)
+
     # Save the search to the database
     db.save_search(user_text, reply)
+
     return jsonify({"response": reply})
 
-  if __name__ == "__main__":
+
+# ✅ Render-compatible entry point
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
