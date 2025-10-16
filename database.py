@@ -1,66 +1,65 @@
-import sqlite3
-from datetime import datetime
+import sqlite3, os
 
 class TravelDatabase:
-    def __init__(self, db_name="travel_assistant.db"):
-        """Initialize the database connection and create the table if it doesn't exist."""
-        self.db_name = db_name
+    def __init__(self):
+        self.db_path = os.path.join(os.getcwd(), "travel.db")
+        self.conn = None
+        self._ensure_database()
+
+    def _ensure_database(self):
+        # Try to open and run a simple pragma; if it fails, delete file
+        if os.path.exists(self.db_path):
+            try:
+                conn = sqlite3.connect(self.db_path)
+                conn.execute("PRAGMA integrity_check;")
+                conn.close()
+            except sqlite3.DatabaseError:
+                print("⚠️ Malformed DB found – deleting and recreating …")
+                try:
+                    os.remove(self.db_path)
+                except OSError:
+                    pass
+
+        # Always open a fresh connection after the check
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._create_table()
 
     def _create_table(self):
-        """Create the searches table if it doesn't exist."""
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS searches (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_message TEXT NOT NULL,
-                bot_response TEXT NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS searches (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_query TEXT NOT NULL,
+                    bot_reply TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            self.conn.commit()
+        except sqlite3.DatabaseError as e:
+            print(f"DB create_table error: {e}")
+            self._reset_database()
+
+    def save_search(self, user_query, bot_reply):
+        try:
+            cur = self.conn.cursor()
+            cur.execute(
+                "INSERT INTO searches (user_query, bot_reply) VALUES (?, ?)",
+                (user_query, bot_reply)
             )
-        ''')
-        conn.commit()
-        conn.close()
+            self.conn.commit()
+        except sqlite3.DatabaseError as e:
+            print(f"DB write error: {e}")
+            self._reset_database()
 
-    def save_search(self, user_message, bot_response):
-        """Save a user message and bot response to the database."""
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO searches (user_message, bot_response)
-            VALUES (?, ?)
-        ''', (user_message, bot_response))
-        conn.commit()
-        conn.close()
-
-    def get_search_history(self, limit=10):
-        """Retrieve the latest search history entries."""
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT user_message, bot_response, timestamp
-            FROM searches
-            ORDER BY timestamp DESC
-            LIMIT ?
-        ''', (limit,))
-        history = cursor.fetchall()
-        conn.close()
-        return history
-
-    def clear_search_history(self):
-        """Clear all search history entries."""
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM searches')
-        conn.commit()
-        conn.close()
-
-# Example usage (uncomment to test)
-if __name__ == "__main__":
-    db = TravelDatabase()
-    # Test saving a search
-    db.save_search("Where is Paris?", "Paris is in France! Let me plan your trip.")
-    # Test retrieving history
-    history = db.get_search_history()
-    for entry in history:
-        print(f"Message: {entry[0]}, Response: {entry[1]}, Time: {entry[2]}")
+    def _reset_database(self):
+        """Drop the file and rebuild from scratch."""
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._create_table()
+        print("✅ Database recreated successfully.")
