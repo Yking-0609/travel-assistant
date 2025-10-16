@@ -10,7 +10,7 @@
       font-family: 'Poppins', Arial, sans-serif; 
       display:flex; justify-content:center; align-items:center; 
       height:100vh; margin:0; 
-      background: #58b780; /* Base ocean blue */
+      background: #58b780; 
       position: relative;
       overflow: hidden;
     }
@@ -21,14 +21,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat, linear-gradient(135deg, #00AEEF 50%, #FFD700 100%);
+      background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat, 
+                  linear-gradient(135deg, #00AEEF 50%, #FFD700 100%);
       background-size: cover;
       z-index: 1;
       opacity: 0.9;
-    }
-
-    /* Travel icons floating */
-    .map-background {
       background-image:
         url('https://cdn-icons-png.flaticon.com/512/3145/3145765.png'), 
         url('https://cdn-icons-png.flaticon.com/512/201/201623.png'),
@@ -49,11 +46,10 @@
       100% {background-position: 8% 18%, 92% 25%, 5% 82%, 95% 78%, 12% 33%, 88% 43%, 7% 63%, 93% 73%;}
     }
 
-    /* 💬 Chat Container (semi-transparent) */
     .chat-container { 
       width: 600px; 
       height: 80vh; 
-      background: rgba(255, 255, 255, 0.85); /* Transparency for background visibility */
+      background: rgba(255, 255, 255, 0.85);
       border-radius: 22px; 
       display:flex; 
       flex-direction:column; 
@@ -62,7 +58,7 @@
       border: 1px solid rgba(255, 255, 255, 0.5);
       animation: fadeIn 0.8s ease-in-out;
       backdrop-filter: blur(8px);
-      z-index: 10; /* Ensure chat is above background */
+      z-index: 10;
     }
 
     @keyframes fadeIn {
@@ -70,7 +66,6 @@
       to {opacity:1; transform:scale(1);}
     }
 
-    /* 🧭 Header */
     .chat-header { 
       background: linear-gradient(90deg, #2F80ED, #56CCF2);
       color:white; 
@@ -83,7 +78,6 @@
       position: relative;
     }
 
-    /* ✈️ Airplane Animation */
     .plane {
       position: absolute;
       left: -50px;
@@ -91,6 +85,7 @@
       transform: translateY(-50%);
       animation: planeFly 12s linear infinite;
     }
+
     @keyframes planeFly {
       0% { left: -60px; opacity: 0.7; }
       10% { opacity: 1; }
@@ -98,7 +93,6 @@
       100% { left: calc(100% + 60px); opacity: 0.7; }
     }
 
-    /* 💬 Messages */
     .chat-messages { 
       flex:1; 
       padding:18px; 
@@ -138,7 +132,6 @@
       border-bottom-left-radius:4px;
     }
 
-    /* ✏️ Input Area */
     .chat-input { 
       display:flex; 
       border-top:1px solid #ddd;
@@ -179,7 +172,6 @@
       transform:scale(1.05);
     }
 
-    /* ✨ Thinking Animation */
     .thinking {
       display: inline-flex;
       align-items: center;
@@ -203,11 +195,9 @@
       40% { transform: translateY(-8px); opacity: 1; }
     }
 
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
     ::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
-    
   </style>
 </head>
 <body>
@@ -225,6 +215,8 @@
   </div>
 
   <script>
+    const API_BASE = "https://travel-assistant-3nuu.onrender.com";
+
     function addMessage(text, sender, id = null) {
       const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
@@ -249,7 +241,7 @@
 
     async function loadGreeting() {
       try {
-        const response = await fetch("http://127.0.0.1:5000/");
+        const response = await fetch(`${API_BASE}/`);
         const data = await response.json();
         addMessage(data.message, "bot");
       } catch {
@@ -269,7 +261,7 @@
       addMessage(createThinkingMessage(), "bot", thinkingId);
 
       try {
-        const response = await fetch("http://127.0.0.1:5000/chat", {
+        const response = await fetch(`${API_BASE}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: userText })
