@@ -1,78 +1,87 @@
+from flask import Flask, request, jsonify, send_from_directory, make_response, redirect
+from flask_cors import CORS, cross_origin
+from agent import GeminiAssistant
+from database import TravelDatabase
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from datetime import datetime
 
-class TravelDatabase:
-    def __init__(self):
-        # Load PostgreSQL URL from environment
-        self.db_url = os.getenv("DATABASE_URL")
-        if not self.db_url:
-            raise ValueError("❌ DATABASE_URL not found in environment variables.")
+# --- Initialize Flask app ---
+app = Flask(__name__)
 
-        # Connect to PostgreSQL (Render provides SSL)
-        try:
-            self.conn = psycopg2.connect(self.db_url, sslmode="require")
-            print("✅ Connected to PostgreSQL successfully!")
-            self._create_table()
-        except Exception as e:
-            print(f"❌ Database connection failed: {e}")
-            self.conn = None
+# ✅ Allow all origins and methods (you can restrict later)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-    def _create_table(self):
-        """Create the searches table if it doesn't already exist."""
-        try:
-            with self.conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS searches (
-                        id SERIAL PRIMARY KEY,
-                        user_query TEXT NOT NULL,
-                        bot_reply TEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """)
-                self.conn.commit()
-                print("✅ Table 'searches' ready.")
-        except Exception as e:
-            print(f"⚠️ Error creating table: {e}")
-            self.conn.rollback()
+# --- Initialize Gemini assistant and database ---
+assistant = GeminiAssistant()
+db = TravelDatabase()
 
-    def save_search(self, user_query, bot_reply):
-        """Insert a user query and bot reply."""
-        if not self.conn:
-            print("⚠️ No database connection.")
-            return
+# --- Routes ---
 
-        try:
-            with self.conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO searches (user_query, bot_reply, created_at) VALUES (%s, %s, %s);",
-                    (user_query, bot_reply, datetime.utcnow())
-                )
-                self.conn.commit()
-                print("💾 Saved search successfully.")
-        except Exception as e:
-            print(f"⚠️ Error saving search: {e}")
-            self.conn.rollback()
+@app.route("/index")
+def index():
+    """Serve the chat HTML page"""
+    return send_from_directory(".", "index.html")
 
-    def get_all_searches(self):
-        """Fetch all searches from the database."""
-        if not self.conn:
-            print("⚠️ No database connection.")
-            return []
-        try:
-            with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM searches ORDER BY created_at DESC;")
-                return cur.fetchall()
-        except Exception as e:
-            print(f"⚠️ Error reading searches: {e}")
-            return []
 
-    def __del__(self):
-        """Close the DB connection when the object is destroyed."""
-        if hasattr(self, "conn") and self.conn:
-            try:
-                self.conn.close()
-                print("🔒 PostgreSQL connection closed.")
-            except Exception as e:
-                print(f"⚠️ Error closing DB: {e}")
+@app.route("/")
+@cross_origin()  # 👈 Explicit CORS for greeting
+def home():
+    """Default greeting route"""
+    try:
+        message = assistant.greet()
+        response = make_response(jsonify({"message": message}))
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+    except Exception as e:
+        print(f"Greeting error: {e}")
+        return jsonify({"message": "Hello! How can I assist you with travel today?"})
+
+
+@app.route("/chat", methods=["POST"])
+@cross_origin()  # 👈 Explicit CORS for chat
+def chat():
+    """Chat endpoint"""
+    data = request.get_json() or {}
+    user_text = data.get("message", "").strip()
+
+    if not user_text:
+        return jsonify({"response": "Please type something."}), 400
+
+    try:
+        reply = assistant.ask(user_text)
+    except Exception as e:
+        print(f"Assistant error: {e}")
+        reply = "Sorry, there was an issue generating a response."
+
+    # Save to database safely
+    try:
+        db.save_search(user_text, reply)
+    except Exception as e:
+        print(f"Database error: {e}")
+
+    response = make_response(jsonify({"response": reply}))
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+
+@app.route("/history", methods=["GET"])
+@cross_origin()
+def history():
+    """Return all stored user queries and bot replies"""
+    try:
+        data = db.get_all_searches()
+        return jsonify(data)
+    except Exception as e:
+        print(f"History fetch error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# --- Redirect base to /index for user convenience ---
+@app.route("/home")
+def redirect_home():
+    return redirect("/index")
+
+
+# --- Render-compatible entry point ---
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
