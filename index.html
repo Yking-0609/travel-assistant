@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Siddhi Tours And Travel Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -17,10 +18,8 @@
 
     .map-background {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat, 
                   linear-gradient(135deg, #00AEEF 50%, #FFD700 100%);
       background-size: cover;
@@ -35,7 +34,7 @@
         url('https://cdn-icons-png.flaticon.com/512/1740/1740658.png'),
         url('https://cdn-icons-png.flaticon.com/512/2912/2912715.png'),
         url('https://cdn-icons-png.flaticon.com/512/1035/1035816.png');
-      background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+      background-repeat: no-repeat;
       background-size: 90px, 80px, 85px, 75px, 50px, 50px, 40px, 40px;
       background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;
       animation: floatIcons 25s ease-in-out infinite alternate;
@@ -47,7 +46,8 @@
     }
 
     .chat-container { 
-      width: 600px; 
+      width: 90%;
+      max-width: 600px; 
       height: 80vh; 
       background: rgba(255, 255, 255, 0.85);
       border-radius: 22px; 
@@ -137,6 +137,7 @@
       border-top:1px solid #ddd;
       background:rgba(255,255,255,0.9);
       padding:10px;
+      gap: 8px;
     }
 
     .chat-input input { 
@@ -159,7 +160,6 @@
       color:white; 
       border:none; 
       padding:0 26px; 
-      margin-left:10px;
       border-radius:8px;
       cursor:pointer; 
       font-size:16px; 
@@ -198,6 +198,53 @@
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
     ::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
+
+    /* 📱 Responsive Design for Mobile */
+    @media (max-width: 768px) {
+      .chat-header {
+        font-size: 18px;
+        padding: 15px;
+      }
+
+      .chat-input input {
+        font-size: 14px;
+        padding: 12px;
+      }
+
+      .chat-input button {
+        padding: 0 18px;
+        font-size: 14px;
+      }
+
+      .message {
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+
+      .plane {
+        width: 30px;
+      }
+
+      .map-background {
+        background-size: 60px, 50px, 55px, 45px, 35px, 35px, 25px, 25px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chat-container {
+        width: 95%;
+        height: 90vh;
+        border-radius: 16px;
+      }
+
+      .chat-input {
+        flex-direction: column;
+      }
+
+      .chat-input button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
