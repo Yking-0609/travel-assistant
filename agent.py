@@ -29,7 +29,7 @@ class GeminiAssistant:
 
     def greet(self) -> str:
         """Return a welcome message."""
-        return "Hello! 👋 I'm your travel assistant by Siddhi Tours and Travels. Where would you like to go?"
+        return "Hello! 👋 I'm your travel assistant by Atlast Tours and Travels. Where would you like to go?"
 
     def ask(self, user_message: str) -> str:
         """Send a message to Gemini and return the reply."""
