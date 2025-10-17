@@ -24,3 +24,17 @@ ENV/
 *.bak
 *.swp
 *.tmp
+
+# Ignore environment variables
+.env
+
+# Byte-compiled files
+__pycache__/
+*.pyc
+
+# SQLite (if any local remnants)
+*.db
+
+# System files
+.DS_Store
+Thumbs.db

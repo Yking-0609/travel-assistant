@@ -63,6 +63,18 @@ def chat():
     return response
 
 
+@app.route("/history", methods=["GET"])
+@cross_origin()
+def history():
+    """Return all stored user queries and bot replies"""
+    try:
+        data = db.get_all_searches()
+        return jsonify(data)
+    except Exception as e:
+        print(f"History fetch error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # --- Redirect base to /index for user convenience ---
 @app.route("/home")
 def redirect_home():
