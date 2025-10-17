@@ -3,23 +3,16 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
-
 class TravelDatabase:
     def __init__(self):
+        # Load PostgreSQL URL from environment
         self.db_url = os.getenv("DATABASE_URL")
         if not self.db_url:
             raise ValueError("❌ DATABASE_URL not found in environment variables.")
 
-        self.conn = None
-        self._connect()
-
-    def _connect(self):
-        """Establish or re-establish PostgreSQL connection."""
+        # Connect to PostgreSQL (Render provides SSL)
         try:
-            if self.conn:
-                self.conn.close()
             self.conn = psycopg2.connect(self.db_url, sslmode="require")
-            self.conn.autocommit = False  # manual control over commits
             print("✅ Connected to PostgreSQL successfully!")
             self._create_table()
         except Exception as e:
@@ -27,7 +20,7 @@ class TravelDatabase:
             self.conn = None
 
     def _create_table(self):
-        """Ensure the searches table exists."""
+        """Create the searches table if it doesn't already exist."""
         try:
             with self.conn.cursor() as cur:
                 cur.execute("""
@@ -42,23 +35,13 @@ class TravelDatabase:
                 print("✅ Table 'searches' ready.")
         except Exception as e:
             print(f"⚠️ Error creating table: {e}")
-            self._rollback()
-
-    def _rollback(self):
-        """Rollback transaction safely."""
-        try:
-            if self.conn:
-                self.conn.rollback()
-                print("↩️ Transaction rolled back.")
-        except Exception as e:
-            print(f"⚠️ Rollback failed: {e}")
-            self._connect()
+            self.conn.rollback()
 
     def save_search(self, user_query, bot_reply):
-        """Save user and bot messages into DB."""
+        """Insert a user query and bot reply."""
         if not self.conn:
-            print("⚠️ No DB connection — reconnecting …")
-            self._connect()
+            print("⚠️ No database connection.")
+            return
 
         try:
             with self.conn.cursor() as cur:
@@ -67,42 +50,29 @@ class TravelDatabase:
                     (user_query, bot_reply, datetime.utcnow())
                 )
                 self.conn.commit()
-                print(f"💾 Saved search → {user_query[:30]} | {bot_reply[:50]}")
-        except psycopg2.InterfaceError:
-            print("⚠️ Lost DB connection — reconnecting …")
-            self._connect()
-            self.save_search(user_query, bot_reply)
+                print("💾 Saved search successfully.")
         except Exception as e:
             print(f"⚠️ Error saving search: {e}")
-            self._rollback()
+            self.conn.rollback()
 
     def get_all_searches(self):
-        """Fetch all saved searches safely."""
+        """Fetch all searches from the database."""
         if not self.conn:
-            print("⚠️ No DB connection — reconnecting …")
-            self._connect()
-
+            print("⚠️ No database connection.")
+            return []
         try:
             with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("SELECT * FROM searches ORDER BY created_at DESC;")
-                rows = cur.fetchall()
-                self.conn.commit()  # ensure transaction closes cleanly
-                print(f"📜 Retrieved {len(rows)} records.")
-                return rows
-        except psycopg2.InterfaceError:
-            print("⚠️ Lost DB connection — reconnecting …")
-            self._connect()
-            return self.get_all_searches()
+                return cur.fetchall()
         except Exception as e:
             print(f"⚠️ Error reading searches: {e}")
-            self._rollback()
             return []
 
     def __del__(self):
-        """Close the DB connection cleanly."""
-        try:
-            if self.conn:
+        """Close the DB connection when the object is destroyed."""
+        if hasattr(self, "conn") and self.conn:
+            try:
                 self.conn.close()
                 print("🔒 PostgreSQL connection closed.")
-        except Exception:
-            pass
+            except Exception as e:
+                print(f"⚠️ Error closing DB: {e}")
