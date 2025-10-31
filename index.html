@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Siddhi Tours And Travel Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    /* --- Your existing CSS (unchanged) --- */
+    /* 🌈 Vibrant Background with Travel Icons */
     body { 
       font-family: 'Poppins', Arial, sans-serif; 
       display:flex; justify-content:center; align-items:center; 
@@ -14,6 +15,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .map-background {
       position: absolute;
       top: 0; left: 0;
@@ -37,52 +39,219 @@
       background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;
       animation: floatIcons 25s ease-in-out infinite alternate;
     }
+
     @keyframes floatIcons {
       0% {background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;}
       100% {background-position: 8% 18%, 92% 25%, 5% 82%, 95% 78%, 12% 33%, 88% 43%, 7% 63%, 93% 73%;}
     }
+
     .chat-container { 
-      width: 600px; height: 80vh; 
+      width: 90%;
+      max-width: 600px; 
+      height: 80vh; 
       background: rgba(255, 255, 255, 0.85);
-      border-radius: 22px; display:flex; flex-direction:column; 
-      overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      border-radius: 22px; 
+      display:flex; 
+      flex-direction:column; 
+      overflow:hidden; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
       border: 1px solid rgba(255, 255, 255, 0.5);
       animation: fadeIn 0.8s ease-in-out;
       backdrop-filter: blur(8px);
       z-index: 10;
     }
-    @keyframes fadeIn { from {opacity:0; transform:scale(0.95);} to {opacity:1; transform:scale(1);} }
+
+    @keyframes fadeIn {
+      from {opacity:0; transform:scale(0.95);}
+      to {opacity:1; transform:scale(1);}
+    }
+
     .chat-header { 
       background: linear-gradient(90deg, #2F80ED, #56CCF2);
-      color:white; padding:20px; text-align:center; font-size:22px; font-weight:600;
+      color:white; 
+      padding:20px; 
+      text-align:center; 
+      font-size:22px; 
+      font-weight:600; 
+      letter-spacing:0.5px;
       box-shadow:0 2px 6px rgba(0,0,0,0.15);
       position: relative;
     }
-    .plane { position: absolute; left: -50px; top: 50%; transform: translateY(-50%); animation: planeFly 12s linear infinite; }
+
+    .plane {
+      position: absolute;
+      left: -50px;
+      top: 50%;
+      transform: translateY(-50%);
+      animation: planeFly 12s linear infinite;
+    }
+
     @keyframes planeFly {
       0% { left: -60px; opacity: 0.7; }
       10% { opacity: 1; }
       90% { opacity: 1; }
       100% { left: calc(100% + 60px); opacity: 0.7; }
     }
-    .chat-messages { flex:1; padding:18px; overflow-y:auto; background: rgba(143, 197, 238, 0.5); }
-    .message { margin:10px 0; padding:14px 18px; border-radius:14px; max-width:75%; line-height:1.5; font-size:16px; word-wrap:break-word; animation: slideUp 0.3s ease; }
-    @keyframes slideUp { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
-    .user { background:#2F80ED; color:white; margin-left:auto; text-align:right; border-bottom-right-radius:4px; }
-    .bot { background:#E0F7FA; color:#333333; margin-right:auto; text-align:left; border-bottom-left-radius:4px; }
-    .chat-input { display:flex; border-top:1px solid #ddd; background:rgba(255,255,255,0.9); padding:10px; }
-    .chat-input input { flex:1; border:none; padding:14px 16px; font-size:16px; border-radius:8px; background:#f1f4f3; transition: background 0.3s; }
-    .chat-input input:focus { outline:none; background:#e7b6b6; }
-    .chat-input button { background:#2F80ED; color:white; border:none; padding:0 26px; margin-left:10px; border-radius:8px; cursor:pointer; font-size:16px; font-weight:500; transition: background 0.3s, transform 0.1s; }
-    .chat-input button:hover { background:#2569c9; transform:scale(1.05); }
+
+    .chat-messages { 
+      flex:1; 
+      padding:18px; 
+      overflow-y:auto; 
+      background: rgba(143, 197, 238, 0.5);
+    }
+
+    .message { 
+      margin:10px 0; 
+      padding:14px 18px; 
+      border-radius:14px; 
+      max-width:75%; 
+      line-height:1.5; 
+      font-size:16px; 
+      word-wrap:break-word; 
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {opacity:0; transform:translateY(10px);}
+      to {opacity:1; transform:translateY(0);}
+    }
+
+    .user { 
+      background:#2F80ED; 
+      color:white; 
+      margin-left:auto; 
+      text-align:right; 
+      border-bottom-right-radius:4px;
+    }
+
+    .bot { 
+      background:#E0F7FA; 
+      color:#333333; 
+      margin-right:auto; 
+      text-align:left; 
+      border-bottom-left-radius:4px;
+    }
+
+    /* NEW: Bot list styling */
+    .bot-list {
+      margin: 0.4rem 0;
+      padding-left: 1.2rem;
+    }
+    .bot-list li {
+      margin-bottom: 0.3rem;
+      line-height: 1.4;
+    }
+
+    .chat-input { 
+      display:flex; padding:12px; 
+      border-top:1px solid #ddd; background:white;
+    }
+
+    .chat-input input { 
+      flex:1; padding:12px; 
+      border:1px solid #ddd; border-radius:8px; 
+      font-size:16px; margin-right:10px; 
+    }
+
+    .chat-input button { 
+      padding:0 24px; background:#2F80ED; color:white; 
+      border:none; border-radius:8px; font-size:16px; cursor:pointer; 
+      transition:0.3s; 
+    }
+
+    .chat-input button:hover { background:#1A73E8; }
+
+    .thinking { 
+      display:flex; align-items:center; 
+      font-size:16px; color:#888; 
+      padding:10px; 
+    }
+
+    .dot { 
+      width:8px; height:8px; 
+      border-radius:50%; margin:0 4px; 
+      animation: bounce 1s infinite ease-in-out;
+    }
+
+    .dot:nth-child(1) { background:#2F80ED; animation-delay: 0s; }
+    .dot:nth-child(2) { background:#34A853; animation-delay: 0.2s; }
+    .dot:nth-child(3) { background:#FBBC05; animation-delay: 0.4s; }
+    .dot:nth-child(4) { background:#EA4335; animation-delay: 0.6s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-8px); opacity: 1; }
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
+    ::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
+
+    /* 📱 Responsive Design for Mobile */
+    @media (max-width: 768px) {
+      .chat-header {
+        font-size: 18px;
+        padding: 15px;
+      }
+
+      .chat-input input {
+        font-size: 14px;
+        padding: 12px;
+      }
+
+      .chat-input button {
+        padding: 0 18px;
+        font-size: 14px;
+      }
+
+      .message {
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+
+      .plane {
+        width: 30px;
+      }
+
+      .map-background {
+        background-size: 60px, 50px, 55px, 45px, 35px, 35px, 25px, 25px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chat-container {
+        width: 95%;
+        height: 90vh;
+        border-radius: 16px;
+      }
+
+      .chat-input {
+        flex-direction: column;
+      }
+
+      .chat-input button {
+        width: 100%;
+      }
+    }
+  
+.bot-list {
+  margin: 0.8rem 0;
+  padding-left: 1.5rem;
+  font-size: 16px;
+  color: #333;
+}
+
+.bot-list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
   </style>
 </head>
-
 <body>
   <div class="map-background"></div>
   <div class="chat-container">
     <div class="chat-header">
-      🌍 Siddhi Tours And Travel Assistant
+      🌍 Atlast Tours And Travel Assistant
       <img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" class="plane" width="40" alt="plane">
     </div>
     <div class="chat-messages" id="messages"></div>
@@ -95,36 +264,35 @@
   <script>
     const API_BASE = "https://travel-assistant-3nuu.onrender.com";
 
-    // 🪄 Format text into numbered or bulleted steps
-    function formatBotReply(text) {
-      // Split lines or sentences
-      const parts = text.split(/(?:\n|\. )+/).filter(p => p.trim().length > 0);
-      if (parts.length <= 1) return text; // normal paragraph
-      
-      // Create a numbered list
-      let formatted = "<ol>";
-      for (const p of parts) formatted += `<li>${p.trim()}</li>`;
-      formatted += "</ol>";
-      return formatted;
-    }
-
     function addMessage(text, sender, id = null) {
       const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
       msg.className = "message " + sender;
-      msg.innerHTML = sender === "bot" ? formatBotReply(text) : text;
+      msg.innerHTML = text;
       if (id) msg.id = id;
       chatbox.appendChild(msg);
       chatbox.scrollTop = chatbox.scrollHeight;
     }
 
+    function createThinkingMessage() {
+      return `
+        <div class="thinking">
+          🤔
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      `;
+    }
+
     async function loadGreeting() {
       try {
-        const res = await fetch(`${API_BASE}/`);
-        const data = await res.json();
+        const response = await fetch(${API_BASE}/);
+        const data = await response.json();
         addMessage(data.message, "bot");
       } catch {
-        addMessage("⚠️ Could not load greeting.", "bot");
+        addMessage("⚠ Could not load greeting.", "bot");
       }
     }
 
@@ -132,32 +300,57 @@
       const input = document.getElementById("userInput");
       const userText = input.value.trim();
       if (!userText) return;
+
       addMessage(userText, "user");
       input.value = "";
 
-      const tempId = "thinking";
-      addMessage("🤔 Thinking...", "bot", tempId);
+      const thinkingId = "thinking-msg";
+      addMessage(createThinkingMessage(), "bot", thinkingId);
 
       try {
-        const res = await fetch(`${API_BASE}/chat`, {
+        const response = await fetch(${API_BASE}/chat, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: userText })
         });
-        const data = await res.json();
-        document.getElementById(tempId)?.remove();
-        addMessage(data.response, "bot");
+        const data = await response.json();
+
+        // Convert bot response to numbered list
+        const listHtml = toNumberedList(data.response);
+        document.getElementById(thinkingId)?.remove();
+        addMessage(listHtml, "bot");
       } catch {
-        document.getElementById(tempId)?.remove();
-        addMessage("⚠️ Error: Could not reach server.", "bot");
+        document.getElementById(thinkingId)?.remove();
+        addMessage("⚠ Error: Could not reach server.", "bot");
       }
     }
 
-    document.getElementById("userInput").addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
-    });
+    // NEW: Convert text to numbered list
+   // Improved: Convert AI text to a clean numbered or bulleted list
+function toNumberedList(text) {
+  // Remove Markdown symbols for cleaner output
+  text = text
+    .replace(/[#*]+/g, '')
+    .replace(/\n+/g, '\n')
+    .trim();
 
-    window.onload = loadGreeting;
+  // Split into logical chunks (by headings, newlines, or punctuation)
+  const parts = text.split(/(?:\n|(?<=[.!?])\s+)/).filter(s => s.trim());
+
+  if (parts.length === 0) return text; // fallback if something goes wrong
+
+  // If there are few sentences, use simple list; if many, use ordered list
+  const isLong = parts.length > 4;
+  const tag = isLong ? 'ol' : 'ul';
+
+  const list = parts
+    .map(p => `<li>${p.trim()}</li>`)
+    .join('');
+
+  return `<${tag} class="bot-list">${list}</${tag}>`;
+}
+
+
   </script>
 </body>
 </html>
