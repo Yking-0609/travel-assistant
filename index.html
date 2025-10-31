@@ -1,233 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Travel Assistant</title>
+  <meta charset="UTF-8">
+  <title>Siddhi Tours And Travel Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #a8edea, #fed6e3);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+    /* --- Your existing CSS (unchanged) --- */
+    body { 
+      font-family: 'Poppins', Arial, sans-serif; 
+      display:flex; justify-content:center; align-items:center; 
+      height:100vh; margin:0; 
+      background: #58b780; 
+      position: relative;
       overflow: hidden;
     }
-
-    header {
-      background: #0077b6;
-      color: white;
-      text-align: center;
-      padding: 15px;
-      font-size: 1.4rem;
-      font-weight: 600;
-      letter-spacing: 1px;
+    .map-background {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat, 
+                  linear-gradient(135deg, #00AEEF 50%, #FFD700 100%);
+      background-size: cover;
+      z-index: 1;
+      opacity: 0.9;
+      background-image:
+        url('https://cdn-icons-png.flaticon.com/512/3145/3145765.png'), 
+        url('https://cdn-icons-png.flaticon.com/512/201/201623.png'),
+        url('https://cdn-icons-png.flaticon.com/512/616/616408.png'),
+        url('https://cdn-icons-png.flaticon.com/512/1055/1055646.png'),
+        url('https://cdn-icons-png.flaticon.com/512/109/109791.png'),
+        url('https://cdn-icons-png.flaticon.com/512/1740/1740658.png'),
+        url('https://cdn-icons-png.flaticon.com/512/2912/2912715.png'),
+        url('https://cdn-icons-png.flaticon.com/512/1035/1035816.png');
+      background-repeat: no-repeat;
+      background-size: 90px, 80px, 85px, 75px, 50px, 50px, 40px, 40px;
+      background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;
+      animation: floatIcons 25s ease-in-out infinite alternate;
     }
-
-    #chat-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      scroll-behavior: smooth;
+    @keyframes floatIcons {
+      0% {background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;}
+      100% {background-position: 8% 18%, 92% 25%, 5% 82%, 95% 78%, 12% 33%, 88% 43%, 7% 63%, 93% 73%;}
     }
-
-    .message {
-      max-width: 80%;
-      padding: 12px 15px;
-      border-radius: 15px;
-      line-height: 1.5;
-      font-size: 1rem;
-      animation: fadeIn 0.3s ease-in;
-      white-space: pre-wrap;
+    .chat-container { 
+      width: 600px; height: 80vh; 
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 22px; display:flex; flex-direction:column; 
+      overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      animation: fadeIn 0.8s ease-in-out;
+      backdrop-filter: blur(8px);
+      z-index: 10;
     }
-
-    .user {
-      background-color: #0077b6;
-      color: white;
-      align-self: flex-end;
-      border-bottom-right-radius: 0;
+    @keyframes fadeIn { from {opacity:0; transform:scale(0.95);} to {opacity:1; transform:scale(1);} }
+    .chat-header { 
+      background: linear-gradient(90deg, #2F80ED, #56CCF2);
+      color:white; padding:20px; text-align:center; font-size:22px; font-weight:600;
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+      position: relative;
     }
-
-    .bot {
-      background-color: white;
-      color: #222;
-      align-self: flex-start;
-      border-bottom-left-radius: 0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    .plane { position: absolute; left: -50px; top: 50%; transform: translateY(-50%); animation: planeFly 12s linear infinite; }
+    @keyframes planeFly {
+      0% { left: -60px; opacity: 0.7; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { left: calc(100% + 60px); opacity: 0.7; }
     }
-
-    .bot-list {
-      margin: 0.8rem 0 0.3rem 1.3rem;
-      padding-left: 1.2rem;
-      font-size: 0.95rem;
-      color: #333;
-    }
-
-    .bot-list li {
-      margin-bottom: 0.4rem;
-      line-height: 1.5;
-    }
-
-    #input-container {
-      display: flex;
-      padding: 10px;
-      background: #ffffff;
-      border-top: 1px solid #ccc;
-    }
-
-    #user-input {
-      flex: 1;
-      padding: 10px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      outline: none;
-    }
-
-    #send-btn {
-      background: #0077b6;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      margin-left: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: 0.3s;
-    }
-
-    #send-btn:hover {
-      background: #005f8d;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 768px) {
-      header {
-        font-size: 1.1rem;
-      }
-
-      #user-input {
-        font-size: 0.9rem;
-      }
-
-      #send-btn {
-        font-size: 0.9rem;
-        padding: 8px 14px;
-      }
-    }
+    .chat-messages { flex:1; padding:18px; overflow-y:auto; background: rgba(143, 197, 238, 0.5); }
+    .message { margin:10px 0; padding:14px 18px; border-radius:14px; max-width:75%; line-height:1.5; font-size:16px; word-wrap:break-word; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+    .user { background:#2F80ED; color:white; margin-left:auto; text-align:right; border-bottom-right-radius:4px; }
+    .bot { background:#E0F7FA; color:#333333; margin-right:auto; text-align:left; border-bottom-left-radius:4px; }
+    .chat-input { display:flex; border-top:1px solid #ddd; background:rgba(255,255,255,0.9); padding:10px; }
+    .chat-input input { flex:1; border:none; padding:14px 16px; font-size:16px; border-radius:8px; background:#f1f4f3; transition: background 0.3s; }
+    .chat-input input:focus { outline:none; background:#e7b6b6; }
+    .chat-input button { background:#2F80ED; color:white; border:none; padding:0 26px; margin-left:10px; border-radius:8px; cursor:pointer; font-size:16px; font-weight:500; transition: background 0.3s, transform 0.1s; }
+    .chat-input button:hover { background:#2569c9; transform:scale(1.05); }
   </style>
 </head>
+
 <body>
-  <header>🌍 Travel Assistant</header>
-
-  <main id="chat-container"></main>
-
-  <div id="input-container">
-    <input type="text" id="user-input" placeholder="Ask about destinations, weather, tips..." />
-    <button id="send-btn">Send</button>
+  <div class="map-background"></div>
+  <div class="chat-container">
+    <div class="chat-header">
+      🌍 Siddhi Tours And Travel Assistant
+      <img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" class="plane" width="40" alt="plane">
+    </div>
+    <div class="chat-messages" id="messages"></div>
+    <div class="chat-input">
+      <input type="text" id="userInput" placeholder="Ask about a destination, itinerary, or travel tips..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
   </div>
 
   <script>
-    const chatContainer = document.getElementById("chat-container");
-    const userInput = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
+    const API_BASE = "https://travel-assistant-3nuu.onrender.com";
 
-    const API_URL = "https://travel-assistant-3nuu.onrender.com/chat";
-    const GREETING_URL = "https://travel-assistant-3nuu.onrender.com/";
-
-    // Auto-scroll chat
-    function scrollToBottom() {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+    // 🪄 Format text into numbered or bulleted steps
+    function formatBotReply(text) {
+      // Split lines or sentences
+      const parts = text.split(/(?:\n|\. )+/).filter(p => p.trim().length > 0);
+      if (parts.length <= 1) return text; // normal paragraph
+      
+      // Create a numbered list
+      let formatted = "<ol>";
+      for (const p of parts) formatted += `<li>${p.trim()}</li>`;
+      formatted += "</ol>";
+      return formatted;
     }
 
-    // Create chat bubble
-    function createMessage(text, sender) {
+    function addMessage(text, sender, id = null) {
+      const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
-      msg.classList.add("message", sender);
-      msg.innerHTML = text;
-      chatContainer.appendChild(msg);
-      scrollToBottom();
+      msg.className = "message " + sender;
+      msg.innerHTML = sender === "bot" ? formatBotReply(text) : text;
+      if (id) msg.id = id;
+      chatbox.appendChild(msg);
+      chatbox.scrollTop = chatbox.scrollHeight;
     }
 
-    // Improved: Convert AI text to clean numbered list
-    function toNumberedList(text) {
-      text = text
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // bold
-        .replace(/#+\s*/g, '')                            // remove headings
-        .replace(/\*/g, '')                               // remove asterisks
-        .replace(/\n+/g, '\n')
-        .trim();
-
-      const parts = text
-        .split(/(?:\n|(?<=[.!?])\s+)/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-
-      if (parts.length <= 1) return text;
-
-      const tag = parts.length > 4 ? "ol" : "ul";
-      const list = parts.map(p => `<li>${p}</li>`).join("");
-      return `<${tag} class="bot-list">${list}</${tag}>`;
-    }
-
-    // Fetch AI response
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
-
-      createMessage(message, "user");
-      userInput.value = "";
-      createMessage("Typing...", "bot");
-
+    async function loadGreeting() {
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
-        });
+        const res = await fetch(`${API_BASE}/`);
         const data = await res.json();
-        const botText = toNumberedList(data.response || "Sorry, I couldn’t get that.");
-
-        chatContainer.lastChild.remove(); // remove "Typing..."
-        createMessage(botText, "bot");
-      } catch (err) {
-        console.error("Error:", err);
-        chatContainer.lastChild.remove();
-        createMessage("⚠️ Could not reach the server.", "bot");
+        addMessage(data.message, "bot");
+      } catch {
+        addMessage("⚠️ Could not load greeting.", "bot");
       }
     }
 
-    sendBtn.addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", (e) => {
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const userText = input.value.trim();
+      if (!userText) return;
+      addMessage(userText, "user");
+      input.value = "";
+
+      const tempId = "thinking";
+      addMessage("🤔 Thinking...", "bot", tempId);
+
+      try {
+        const res = await fetch(`${API_BASE}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userText })
+        });
+        const data = await res.json();
+        document.getElementById(tempId)?.remove();
+        addMessage(data.response, "bot");
+      } catch {
+        document.getElementById(tempId)?.remove();
+        addMessage("⚠️ Error: Could not reach server.", "bot");
+      }
+    }
+
+    document.getElementById("userInput").addEventListener("keypress", e => {
       if (e.key === "Enter") sendMessage();
     });
 
-    // Load greeting
-    async function loadGreeting() {
-      try {
-        const res = await fetch(GREETING_URL);
-        const data = await res.json();
-        createMessage(data.message || "Hi there! How can I help you plan your trip?", "bot");
-      } catch (err) {
-        console.error("⚠️ Could not load greeting.", err);
-        createMessage("Hello! How can I assist with your travel today?", "bot");
-      }
-    }
-
-    loadGreeting();
+    window.onload = loadGreeting;
   </script>
 </body>
 </html>
