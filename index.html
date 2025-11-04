@@ -212,12 +212,12 @@
   <script>
     const API_BASE = "https://travel-assistant-3nuu.onrender.com";
 
-    // Helper to add messages
-    function addMessage(text, sender, id = null) {
+    // Add message to chat
+    function addMessage(content, sender, id = null) {
       const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
       msg.className = "message " + sender;
-      msg.innerHTML = text;
+      msg.innerHTML = content;
       if (id) msg.id = id;
       chatbox.appendChild(msg);
       chatbox.scrollTop = chatbox.scrollHeight;
@@ -237,12 +237,28 @@
       `;
     }
 
-    // Load greeting from backend
+    // Format bot message neatly
+    function formatBotMessage(text) {
+      const lines = text.split(/\n/).filter(line => line.trim() !== "");
+      const formatted = lines.map(line => {
+        if (/^[-*]\s/.test(line)) return `<li>${line.replace(/^[-*]\s/, "")}</li>`;
+        else return `<p>${line}</p>`;
+      });
+
+      if (formatted.some(line => line.startsWith("<li>"))) {
+        const listItems = formatted.filter(line => line.startsWith("<li>")).join("");
+        const paragraphs = formatted.filter(line => !line.startsWith("<li>")).join("");
+        return paragraphs + `<ul>${listItems}</ul>`;
+      }
+      return formatted.join("");
+    }
+
+    // Load greeting
     async function loadGreeting() {
       try {
         const res = await fetch(`${API_BASE}/`);
         const data = await res.json();
-        addMessage("🌍 Atlast Travel Assistant: " + data.message, "bot");
+        addMessage("🌍 Atlast Travel Assistant: " + formatBotMessage(data.message), "bot");
       } catch {
         addMessage("⚠️ Could not load greeting.", "bot");
       }
@@ -254,11 +270,9 @@
       const userText = input.value.trim();
       if (!userText) return;
 
-      // Show user message
       addMessage(userText, "user");
       input.value = "";
 
-      // Show thinking message
       const thinkingHTML = createThinkingMessage();
       const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
 
@@ -270,11 +284,8 @@
         });
         const data = await response.json();
 
-        // Remove thinking animation
         thinkingMsg.remove();
-
-        // Show bot response
-        addMessage("🤖 Gemini: " + data.response, "bot");
+        addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
       } catch (err) {
         thinkingMsg.remove();
         addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
