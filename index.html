@@ -132,6 +132,9 @@
       border-bottom-left-radius:4px;
     }
 
+    .bot p, .bot li { margin:6px 0; }
+    .bot ul { margin:6px 0 6px 20px; }
+
     .chat-input { 
       display:flex; padding:12px; 
       border-top:1px solid #ddd; background:white;
@@ -244,7 +247,6 @@
         if (/^[-*]\s/.test(line)) return `<li>${line.replace(/^[-*]\s/, "")}</li>`;
         else return `<p>${line}</p>`;
       });
-
       if (formatted.some(line => line.startsWith("<li>"))) {
         const listItems = formatted.filter(line => line.startsWith("<li>")).join("");
         const paragraphs = formatted.filter(line => !line.startsWith("<li>")).join("");
@@ -291,6 +293,15 @@
         addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
       }
     }
+
+    // Enter key support
+    const inputField = document.getElementById("userInput");
+    inputField.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
 
     window.onload = loadGreeting;
   </script>
