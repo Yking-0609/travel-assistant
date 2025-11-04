@@ -132,16 +132,6 @@
       border-bottom-left-radius:4px;
     }
 
-    /* NEW: Bot list styling */
-    .bot-list {
-      margin: 0.4rem 0;
-      padding-left: 1.2rem;
-    }
-    .bot-list li {
-      margin-bottom: 0.3rem;
-      line-height: 1.4;
-    }
-
     .chat-input { 
       display:flex; padding:12px; 
       border-top:1px solid #ddd; background:white;
@@ -161,6 +151,7 @@
 
     .chat-input button:hover { background:#1A73E8; }
 
+    /* Thinking animation */
     .thinking { 
       display:flex; align-items:center; 
       font-size:16px; color:#888; 
@@ -187,51 +178,20 @@
     ::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
     ::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
 
-    /* 📱 Responsive Design for Mobile */
+    /* 📱 Responsive Design */
     @media (max-width: 768px) {
-      .chat-header {
-        font-size: 18px;
-        padding: 15px;
-      }
-
-      .chat-input input {
-        font-size: 14px;
-        padding: 12px;
-      }
-
-      .chat-input button {
-        padding: 0 18px;
-        font-size: 14px;
-      }
-
-      .message {
-        font-size: 14px;
-        padding: 10px 14px;
-      }
-
-      .plane {
-        width: 30px;
-      }
-
-      .map-background {
-        background-size: 60px, 50px, 55px, 45px, 35px, 35px, 25px, 25px;
-      }
+      .chat-header { font-size: 18px; padding: 15px; }
+      .chat-input input { font-size: 14px; padding: 12px; }
+      .chat-input button { padding: 0 18px; font-size: 14px; }
+      .message { font-size: 14px; padding: 10px 14px; }
+      .plane { width: 30px; }
+      .map-background { background-size: 60px, 50px, 55px, 45px, 35px, 35px, 25px, 25px; }
     }
 
     @media (max-width: 480px) {
-      .chat-container {
-        width: 95%;
-        height: 90vh;
-        border-radius: 16px;
-      }
-
-      .chat-input {
-        flex-direction: column;
-      }
-
-      .chat-input button {
-        width: 100%;
-      }
+      .chat-container { width: 95%; height: 90vh; border-radius: 16px; }
+      .chat-input { flex-direction: column; }
+      .chat-input button { width: 100%; }
     }
   </style>
 </head>
@@ -252,6 +212,7 @@
   <script>
     const API_BASE = "https://travel-assistant-3nuu.onrender.com";
 
+    // Helper to add messages
     function addMessage(text, sender, id = null) {
       const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
@@ -260,8 +221,10 @@
       if (id) msg.id = id;
       chatbox.appendChild(msg);
       chatbox.scrollTop = chatbox.scrollHeight;
+      return msg;
     }
 
+    // Thinking animation HTML
     function createThinkingMessage() {
       return `
         <div class="thinking">
@@ -274,60 +237,49 @@
       `;
     }
 
+    // Load greeting from backend
     async function loadGreeting() {
       try {
-        const response = await fetch(${API_BASE}/);
-        const data = await response.json();
-        addMessage(data.message, "bot");
+        const res = await fetch(`${API_BASE}/`);
+        const data = await res.json();
+        addMessage("🌍 Atlast Travel Assistant: " + data.message, "bot");
       } catch {
-        addMessage("⚠ Could not load greeting.", "bot");
+        addMessage("⚠️ Could not load greeting.", "bot");
       }
     }
 
+    // Send user message
     async function sendMessage() {
       const input = document.getElementById("userInput");
       const userText = input.value.trim();
       if (!userText) return;
 
+      // Show user message
       addMessage(userText, "user");
       input.value = "";
 
-      const thinkingId = "thinking-msg";
-      addMessage(createThinkingMessage(), "bot", thinkingId);
+      // Show thinking message
+      const thinkingHTML = createThinkingMessage();
+      const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
 
       try {
-        const response = await fetch(${API_BASE}/chat, {
+        const response = await fetch(`${API_BASE}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userText })
+          body: JSON.stringify({ message: userText }),
         });
         const data = await response.json();
 
-        // Convert bot response to numbered list
-        const listHtml = toNumberedList(data.response);
-        document.getElementById(thinkingId)?.remove();
-        addMessage(listHtml, "bot");
-      } catch {
-        document.getElementById(thinkingId)?.remove();
-        addMessage("⚠ Error: Could not reach server.", "bot");
+        // Remove thinking animation
+        thinkingMsg.remove();
+
+        // Show bot response
+        addMessage("🤖 Gemini: " + data.response, "bot");
+      } catch (err) {
+        thinkingMsg.remove();
+        addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
       }
     }
-
-    // NEW: Convert text to numbered list
-    function toNumberedList(text) {
-      // Split into sentences
-      const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
-
-      if (sentences.length === 0) return text; // fallback
-
-      // Build <ol>
-      const items = sentences.map((s, i) => <li>${s.trim()}</li>).join('');
-      return <ol class="bot-list">${items}</ol>;
-    }
-
-    document.getElementById("userInput").addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
-    });
 
     window.onload = loadGreeting;
   </script>
