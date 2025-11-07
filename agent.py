@@ -1,4 +1,4 @@
-# agent.py  ←  REPLACE YOUR ENTIRE FILE WITH THIS
+# agent.py
 import os
 import requests
 from dotenv import load_dotenv
@@ -11,7 +11,6 @@ if not GEMINI_KEY:
 
 genai.configure(api_key=GEMINI_KEY)
 
-# 3 FREE translation servers (auto-fallback)
 TRANSLATE_SERVERS = [
     "https://libretranslate.de/translate",
     "https://translate.terraprint.co/translate",
@@ -40,22 +39,12 @@ class GeminiAssistant:
 
     def ask(self, message, lang="en"):
         try:
-            # Translate user message to English
             msg_en = self._translate(message, "en", lang) if lang != "en" else message
-
-            # Add to history
             self.history.append({"role": "user", "content": msg_en})
-
-            # Generate reply
             context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-10:])
             prompt = f"You are a fun travel assistant. Reply in short bullet points.\n\n{context}"
             reply_en = self.model.generate_content(prompt).text.strip()
-
-            # Save bot reply
             self.history.append({"role": "assistant", "content": reply_en})
-
-            # Translate back
             return self._translate(reply_en, lang) if lang != "en" else reply_en
-
-        except Exception as e:
-            return "I'm packing your bags! Try again in 5 sec"
+        except:
+            return "I'm planning your trip! Try again"
