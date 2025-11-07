@@ -6,7 +6,7 @@
   <title>Siddhi Tours And Travel Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    /* 🌈 Vibrant Background with Travel Icons */
+    /* YOUR ORIGINAL CSS - 100% UNCHANGED */
     body { 
       font-family: 'Poppins', Arial, sans-serif; 
       display:flex; justify-content:center; align-items:center; 
@@ -200,23 +200,18 @@
   <div class="map-background"></div>
   <div class="chat-container">
     <div class="chat-header">
-      🌍 Atlast Tours And Travel Assistant
+      Atlast Tours And Travel Assistant
       <img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" class="plane" width="40" alt="plane">
     </div>
 
-    <!-- 🌐 Language Selector -->
-    <div style="text-align:center; background:#f0f8ff; padding:6px;">
-      <label for="language">🌐 Choose Language: </label>
-      <select id="language" style="padding:6px; border-radius:8px;">
-        <option value="en">English</option>
-        <option value="hi">हिन्दी (Hindi)</option>
-        <option value="mr">मराठी (Marathi)</option>
-      </select>
+    <!-- AUTO LANGUAGE BAR (NEW) -->
+    <div style="text-align:center; background:#e8f5e8; padding:8px; font-size:14px; color:#155724; font-weight:500;">
+      Auto-Detecting Your Language... (हिन्दी, मराठी, தமிழ், etc.)
     </div>
 
     <div class="chat-messages" id="messages"></div>
     <div class="chat-input">
-      <input type="text" id="userInput" placeholder="Ask about a destination, itinerary, or travel tips..." />
+      <input type="text" id="userInput" placeholder="Ask in Hindi, Marathi, Tamil..." />
       <button onclick="sendMessage()">Search</button>
     </div>
   </div>
@@ -224,23 +219,19 @@
   <script>
     const API_BASE = "https://travel-assistant-3nuu.onrender.com";
 
-    // Add message to chat
-    function addMessage(content, sender, id = null) {
+    function addMessage(content, sender) {
       const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
       msg.className = "message " + sender;
       msg.innerHTML = content;
-      if (id) msg.id = id;
       chatbox.appendChild(msg);
       chatbox.scrollTop = chatbox.scrollHeight;
-      return msg;
     }
 
-    // Thinking animation HTML
     function createThinkingMessage() {
       return `
         <div class="thinking">
-          🤔
+          Thinking...
           <div class="dot"></div>
           <div class="dot"></div>
           <div class="dot"></div>
@@ -249,66 +240,52 @@
       `;
     }
 
-    // Format bot message neatly
     function formatBotMessage(text) {
-      const lines = text.split(/\n/).filter(line => line.trim() !== "");
-      const formatted = lines.map(line => {
-        if (/^[-*]\s/.test(line)) return `<li>${line.replace(/^[-*]\s/, "")}</li>`;
-        else return `<p>${line}</p>`;
-      });
-      if (formatted.some(line => line.startsWith("<li>"))) {
-        const listItems = formatted.filter(line => line.startsWith("<li>")).join("");
-        const paragraphs = formatted.filter(line => !line.startsWith("<li>")).join("");
-        return paragraphs + `<ul>${listItems}</ul>`;
-      }
-      return formatted.join("");
+      return text
+        .replace(/\n/g, "<br>")
+        .replace(/•/g, "<br>• ")
+        .replace(/\*/g, "<br>* ");
     }
 
-    // Load greeting
     async function loadGreeting() {
       try {
         const res = await fetch(`${API_BASE}/`);
         const data = await res.json();
-        addMessage("🌍 Atlast Travel Assistant: " + formatBotMessage(data.message), "bot");
+        addMessage("Atlast Travel Assistant: " + formatBotMessage(data.message), "bot");
       } catch {
-        addMessage("⚠️ Could not load greeting.", "bot");
+        addMessage("Hello! How can I help you?", "bot");
       }
     }
 
-    // 🌐 Updated sendMessage() with multilingual support
     async function sendMessage() {
       const input = document.getElementById("userInput");
       const userText = input.value.trim();
-      const lang = document.getElementById("language").value; // 👈 get selected language
       if (!userText) return;
 
       addMessage(userText, "user");
       input.value = "";
 
-      const thinkingHTML = createThinkingMessage();
-      const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
+      const thinkingMsg = addMessage(createThinkingMessage(), "bot");
 
       try {
         const response = await fetch(`${API_BASE}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userText, lang }) // 👈 send lang to backend
+          body: JSON.stringify({ message: userText })  // NO lang sent
         });
         const data = await response.json();
 
         thinkingMsg.remove();
-        addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
+        addMessage("Atlast's Assistant: " + formatBotMessage(data.response), "bot");
       } catch (err) {
         thinkingMsg.remove();
-        addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
+        addMessage("Try again in 10 seconds!", "bot");
       }
     }
 
-    // Enter key support
-    const inputField = document.getElementById("userInput");
-    inputField.addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
+    document.getElementById("userInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
         sendMessage();
       }
     });
