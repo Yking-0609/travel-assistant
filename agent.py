@@ -2,18 +2,19 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
-# FIXED: The specific error class APIError is now imported from the exceptions submodule, 
-# which is more stable across recent SDK versions.
-from google.generativeai import exceptions 
+# FIXED: Importing APIError using its specific internal file path (_error), 
+# which is the most reliable way to prevent top-level ImportErrors during deployment.
+from google.generativeai._error import APIError 
 
-# Load environment variables from a .env file (for API Key)
+# Load environment variables from a .env file (for local testing only)
 load_dotenv()
 
 # --- Configuration ---
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
-    # If the environment variable is not set, raise an error immediately.
-    raise ValueError("GOOGLE_API_KEY environment variable not found. Please set it.")
+    # This check ensures that if the key is missing in the production environment, 
+    # the failure happens early and clearly.
+    raise ValueError("GOOGLE_API_KEY environment variable not found. Please set it in your Render dashboard.")
     
 genai.configure(api_key=API_KEY)
 
@@ -159,7 +160,7 @@ class GeminiAssistant:
             
             return reply_text
             
-        except exceptions.APIError as e: # Catch using the exceptions submodule
+        except APIError as e: # This is now APIError from the direct internal import
             # Handle specific API errors (e.g., authentication, rate limit)
             print(f"Gemini API Error: {e}")
             # Reraise the exception so app.py can catch and handle it gracefully
