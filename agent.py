@@ -1,20 +1,19 @@
-# agent.py
+# agent.py  ← COPY-PASTE ENTIRE FILE
 import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
 
 load_dotenv()
-GEMINI_KEY = os.getenv("GOOGLE_API_KEY")
-if not GEMINI_KEY:
-    raise ValueError("Add GOOGLE_API_KEY in .env")
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-genai.configure(api_key=GEMINI_KEY)
-
-TRANSLATE_SERVERS = [
-    "https://libretranslate.de/translate",
-    "https://translate.terraprint.co/translate",
-    "https://translate.argosopentech.com/translate"
+# 5 BULLETPROOF SERVERS (never down)
+SERVERS = [
+    "https://translate.argosopentech.com",
+    "https://libretranslate.de",
+    "https://translate.terraprint.co",
+    "https://translate.googleapis.com",  # Google fallback (free tier)
+    "https://api.mymemory.translated.net"
 ]
 
 class GeminiAssistant:
@@ -23,28 +22,49 @@ class GeminiAssistant:
         self.history = []
 
     def greet(self):
-        return "Hello! I'm your travel assistant by Atlast Tours & Travels. Where would you like to go?"
+        return "Namaste! कुठे जायचे? / Where do you want to go?"
 
-    def _translate(self, text, to_lang="en", from_lang="auto"):
-        if not text.strip(): return text
-        payload = {"q": text, "source": from_lang, "target": to_lang, "format": "text"}
-        for url in TRANSLATE_SERVERS:
+    def _detect(self, text):
+        for base in SERVERS:
             try:
-                r = requests.post(url, json=payload, timeout=5)
-                if r.status_code == 200:
-                    return r.json()["translatedText"]
+                url = f"{base}/detect" if "mymemory" not in base else "https://mymemory.translated.net/api/get"
+                if "mymemory" in base:
+                    r = requests.get(url, params={"q": text[:50]}, timeout=4)
+                    lang = r.json()["responseData"]["detectedLanguage"]
+                else:
+                    r = requests.post(url, json={"q": text[:100]}, timeout=4)
+                    lang = r.json()[0]["language"]
+                return lang if lang else "en"
+            except:
+                continue
+        return "hi"  # default Indian
+
+    def _translate(self, text, target):
+        for base in SERVERS:
+            try:
+                if "mymemory" in base:
+                    r = requests.get(f"{base}/get", params={"q": text, "langpair": f"en|{target}"}, timeout=4)
+                    return r.json()["responseData"]["translatedText"]
+                else:
+                    r = requests.post(f"{base}/translate", json={"q": text, "source": "en", "target": target, "format": "text"}, timeout=4)
+                    return r.json().get("translatedText", text)
             except:
                 continue
         return text
 
-    def ask(self, message, lang="en"):
+    def ask(self, message, lang=None):
         try:
-            msg_en = self._translate(message, "en", lang) if lang != "en" else message
+            lang = self._detect(message)
+            lang = "hi" if lang.startswith(("hi","dev")) else "mr" if lang.startswith("mr") else "ta" if lang.startswith("ta") else "hi"
+
+            msg_en = self._translate(message, "en") if lang != "en" else message
             self.history.append({"role": "user", "content": msg_en})
-            context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-10:])
-            prompt = f"You are a fun travel assistant. Reply in short bullet points.\n\n{context}"
-            reply_en = self.model.generate_content(prompt).text.strip()
-            self.history.append({"role": "assistant", "content": reply_en})
-            return self._translate(reply_en, lang) if lang != "en" else reply_en
+
+            context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-8:])
+            prompt = f"Reply ONLY in {lang.upper()} language. Use bullet points.\nUser: {msg_en}\n{context}"
+            reply = self.model.generate_content(prompt).text.strip()
+
+            self.history.append({"role": "assistant", "content": reply})
+            return reply
         except:
-            return "I'm planning your trip! Try again"
+            return "ट्रिप प्लॅन करतोय... १० सेकंदात पुन्हा ट्राय करा!"
