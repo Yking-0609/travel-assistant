@@ -26,260 +26,302 @@
       z-index: 1;
       opacity: 0.9;
       background-image:
-        url('https://cdn-icons-png.flaticon.com/512/3145/3145765.png'), 
-        url('https://cdn-icons-png.flaticon.com/512/201/201623.png'),
-        url('https://cdn-icons-png.flaticon.com/512/616/616408.png'),
-        url('https://cdn-icons-png.flaticon.com/512/1055/1055646.png'),
-        url('https://cdn-icons-png.flaticon.com/512/109/109791.png'),
-        url('https://cdn-icons-png.flaticon.com/512/1740/1740658.png'),
-        url('https://cdn-icons-png.flaticon.com/512/2912/2912715.png'),
-        url('https://cdn-icons-png.flaticon.com/512/1035/1035816.png');
+        url('https://cdn-icons-png.flaticon.com/512/3067/3067858.png'), /* Plane */
+        url('https://cdn-icons-png.flaticon.com/512/3067/3067864.png'), /* Ship */
+        url('https://cdn-icons-png.flaticon.com/512/3067/3067861.png'), /* Train */
+        url('https://cdn-icons-png.flaticon.com/512/3067/3067855.png'); /* Car */
       background-repeat: no-repeat;
-      background-size: 90px, 80px, 85px, 75px, 50px, 50px, 40px, 40px;
-      background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;
-      animation: floatIcons 25s ease-in-out infinite alternate;
+      background-position: 
+        10% 20%, 
+        90% 80%, 
+        30% 90%, 
+        70% 10%;
+      background-size: 80px, 60px, 70px, 90px;
+      animation: travel-icon-move 60s infinite linear;
     }
 
-    @keyframes floatIcons {
-      0% {background-position: 5% 15%, 95% 20%, 8% 85%, 92% 80%, 15% 30%, 85% 40%, 10% 60%, 90% 70%;}
-      100% {background-position: 8% 18%, 92% 25%, 5% 82%, 95% 78%, 12% 33%, 88% 43%, 7% 63%, 93% 73%;}
+    @keyframes travel-icon-move {
+      0% { background-position: 10% 20%, 90% 80%, 30% 90%, 70% 10%; }
+      25% { background-position: 80% 50%, 20% 70%, 50% 10%, 90% 90%; }
+      50% { background-position: 40% 90%, 70% 20%, 10% 40%, 60% 70%; }
+      75% { background-position: 10% 60%, 50% 10%, 80% 80%, 30% 30%; }
+      100% { background-position: 10% 20%, 90% 80%, 30% 90%, 70% 10%; }
     }
 
-    .chat-container { 
+
+    /* 💬 Chat Container Styles */
+    .chat-container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       width: 90%;
-      max-width: 600px; 
-      height: 80vh; 
-      background: rgba(255, 255, 255, 0.85);
-      border-radius: 22px; 
-      display:flex; 
-      flex-direction:column; 
-      overflow:hidden; 
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      animation: fadeIn 0.8s ease-in-out;
-      backdrop-filter: blur(8px);
+      max-width: 600px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
       z-index: 10;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* 🖼️ Header */
+    .chat-header {
+      background: linear-gradient(90deg, #00AEEF, #00CC99);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.25rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 📝 Message Area */
+    #messages {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* 💬 Individual Message Styles */
+    .message {
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+      border-radius: 1rem;
+      max-width: 85%;
+      word-wrap: break-word;
+      line-height: 1.4;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .user {
+      background-color: #00AEEF;
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 0.25rem;
+    }
+
+    .bot {
+      background-color: #E6F7F2; /* Light green/mint */
+      color: #333;
+      margin-right: auto;
+      border-bottom-left-radius: 0.25rem;
+      border: 1px solid #00CC99;
+    }
+
+    .thinking-msg {
+      background-color: #ffc10733;
+      color: #333;
+      font-style: italic;
+      animation: pulse 1.5s infinite;
     }
 
     @keyframes fadeIn {
-      from {opacity:0; transform:scale(0.95);}
-      to {opacity:1; transform:scale(1);}
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .chat-header { 
-      background: linear-gradient(90deg, #2F80ED, #56CCF2);
-      color:white; 
-      padding:20px; 
-      text-align:center; 
-      font-size:22px; 
-      font-weight:600; 
-      letter-spacing:0.5px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.15);
-      position: relative;
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
     }
 
-    .plane {
-      position: absolute;
-      left: -50px;
-      top: 50%;
-      transform: translateY(-50%);
-      animation: planeFly 12s linear infinite;
+
+    /* 🎛️ Input Area */
+    .chat-input-area {
+      padding: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      background-color: white;
+      border-bottom-left-radius: 1.5rem;
+      border-bottom-right-radius: 1.5rem;
     }
 
-    @keyframes planeFly {
-      0% { left: -60px; opacity: 0.7; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { left: calc(100% + 60px); opacity: 0.7; }
+    #userInput {
+      flex-grow: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid #ddd;
+      border-radius: 2rem;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
     }
 
-    .chat-messages { 
-      flex:1; 
-      padding:18px; 
-      overflow-y:auto; 
-      background: rgba(143, 197, 238, 0.5);
+    #userInput:focus {
+      border-color: #00AEEF;
     }
 
-    .message { 
-      margin:10px 0; 
-      padding:14px 18px; 
-      border-radius:14px; 
-      max-width:75%; 
-      line-height:1.5; 
-      font-size:16px; 
-      word-wrap:break-word; 
-      animation: slideUp 0.3s ease;
+    .chat-button {
+      background: #FFD700;
+      color: #333;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px #e0c500;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    @keyframes slideUp {
-      from {opacity:0; transform:translateY(10px);}
-      to {opacity:1; transform:translateY(0);}
+    .chat-button:hover {
+      background: #e0c500;
+    }
+    
+    .chat-button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px #cfa800;
     }
 
-    .user { 
-      background:#2F80ED; 
-      color:white; 
-      margin-left:auto; 
-      text-align:right; 
-      border-bottom-right-radius:4px;
+    /* Language Dropdown Style */
+    #language {
+      padding: 0.75rem 1rem;
+      border: 2px solid #ddd;
+      border-radius: 2rem;
+      font-size: 0.9rem;
+      background-color: #fff;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.3s;
+      /* Style to visually show it's less critical for input */
+      pointer-events: none; 
+      opacity: 0.5;
     }
-
-    .bot { 
-      background:#E0F7FA; 
-      color:#333333; 
-      margin-right:auto; 
-      text-align:left; 
-      border-bottom-left-radius:4px;
-    }
-
-    .bot p, .bot li { margin:6px 0; }
-    .bot ul { margin:6px 0 6px 20px; }
-
-    .chat-input { 
-      display:flex; padding:12px; 
-      border-top:1px solid #ddd; background:white;
-    }
-
-    .chat-input input { 
-      flex:1; padding:12px; 
-      border:1px solid #ddd; border-radius:8px; 
-      font-size:16px; margin-right:10px; 
-    }
-
-    .chat-input button { 
-      padding:0 24px; background:#2F80ED; color:white; 
-      border:none; border-radius:8px; font-size:16px; cursor:pointer; 
-      transition:0.3s; 
-    }
-
-    .chat-input button:hover { background:#1A73E8; }
-
-    .thinking { 
-      display:flex; align-items:center; 
-      font-size:16px; color:#888; 
-      padding:10px; 
-    }
-
-    .dot { 
-      width:8px; height:8px; 
-      border-radius:50%; margin:0 4px; 
-      animation: bounce 1s infinite ease-in-out;
-    }
-
-    .dot:nth-child(1) { background:#2F80ED; animation-delay: 0s; }
-    .dot:nth-child(2) { background:#34A853; animation-delay: 0.2s; }
-    .dot:nth-child(3) { background:#FBBC05; animation-delay: 0.4s; }
-    .dot:nth-child(4) { background:#EA4335; animation-delay: 0.6s; }
-
-    @keyframes bounce {
-      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-      40% { transform: translateY(-8px); opacity: 1; }
-    }
-
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
-    ::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
-
+    
+    /* Responsive adjustments */
     @media (max-width: 768px) {
-      .chat-header { font-size: 18px; padding: 15px; }
-      .chat-input input { font-size: 14px; padding: 12px; }
-      .chat-input button { padding: 0 18px; font-size: 14px; }
-      .message { font-size: 14px; padding: 10px 14px; }
-      .plane { width: 30px; }
-      .map-background { background-size: 60px, 50px, 55px, 45px, 35px, 35px, 25px, 25px; }
+      .chat-container {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+      .chat-header {
+        border-radius: 0;
+      }
+      .chat-input-area {
+        flex-direction: column;
+        gap: 10px;
+      }
+      #userInput {
+        width: 100%;
+        margin-right: 0;
+      }
+      .chat-button {
+        width: 100%;
+      }
+      #language {
+        width: 100%;
+      }
     }
 
-    @media (max-width: 480px) {
-      .chat-container { width: 95%; height: 90vh; border-radius: 16px; }
-      .chat-input { flex-direction: column; }
-      .chat-input button { width: 100%; }
+    /* Utility class for formatting Gemini's response */
+    .formatted-response ul {
+      margin-top: 0.5rem;
+      padding-left: 1.5rem;
+    }
+    .formatted-response li {
+      margin-bottom: 0.5rem;
     }
   </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
   <div class="map-background"></div>
   <div class="chat-container">
     <div class="chat-header">
-      🌍 Atlast Tours And Travel Assistant
-      <img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" class="plane" width="40" alt="plane">
+      Siddhi Travel Assistant ✈️
     </div>
-
-    <!-- 🌐 Language Selector -->
-    <div style="text-align:center; background:#f0f8ff; padding:6px;">
-      <label for="language">🌐 Choose Language: </label>
-      <select id="language" style="padding:6px; border-radius:8px;">
-        <option value="en">English</option>
-        <option value="hi">हिन्दी (Hindi)</option>
-        <option value="mr">मराठी (Marathi)</option>
+    
+    <div id="messages">
+      <!-- Messages will appear here -->
+    </div>
+    
+    <div class="chat-input-area">
+      <!-- Language selector is kept for visual compatibility but is now ignored by JS -->
+      <select id="language">
+        <option value="en">English (Auto)</option>
+        <option value="hi">Hindi (Auto)</option>
+        <option value="mr">Marathi (Auto)</option>
+        <option value="ta">Tamil (Auto)</option>
       </select>
+      
+      <input type="text" id="userInput" placeholder="Ask about travel to India..." autofocus>
+      <button class="chat-button" onclick="sendMessage()">
+        <i class="fas fa-paper-plane"></i>
+      </button>
     </div>
-
-    <div class="chat-messages" id="messages"></div>
-    <div class="chat-input">
-      <input type="text" id="userInput" placeholder="Ask about a destination, itinerary, or travel tips..." />
-      <button onclick="sendMessage()">Search</button>
+    
+    <div class="chat-footer text-center text-xs text-gray-500 p-2">
+      Powered by Google Gemini 1.5 Flash
     </div>
   </div>
 
   <script>
-    const API_BASE = "https://travel-assistant-3nuu.onrender.com";
+    // --- Configuration and Helper Functions ---
+    const API_BASE = "http://127.0.0.1:5000";
 
-    // Add message to chat
-    function addMessage(content, sender, id = null) {
+    // Helper to add messages to chat and scroll to bottom
+    function addMessage(text, sender, className = "") {
       const chatbox = document.getElementById("messages");
       const msg = document.createElement("div");
-      msg.className = "message " + sender;
-      msg.innerHTML = content;
-      if (id) msg.id = id;
+      msg.className = `message ${sender} ${className}`;
+      msg.innerHTML = text; // Use innerHTML to handle HTML from createThinkingMessage and formattedBotMessage
+      
       chatbox.appendChild(msg);
-      chatbox.scrollTop = chatbox.scrollHeight;
-      return msg;
+      chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
+      return msg; // Return the message element for removal/modification
     }
 
-    // Thinking animation HTML
+    // Creates the thinking state message HTML
     function createThinkingMessage() {
       return `
-        <div class="thinking">
-          🤔
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
+        <div class="flex items-center space-x-2">
+          <i class="fas fa-magic text-yellow-500"></i>
+          <span>Thinking...</span>
         </div>
       `;
     }
 
-    // Format bot message neatly
+    // Formats the bot message (especially for bullet points)
     function formatBotMessage(text) {
-      const lines = text.split(/\n/).filter(line => line.trim() !== "");
-      const formatted = lines.map(line => {
-        if (/^[-*]\s/.test(line)) return <li>${line.replace(/^[-*]\s/, "")}</li>;
-        else return <p>${line}</p>;
-      });
-      if (formatted.some(line => line.startsWith("<li>"))) {
-        const listItems = formatted.filter(line => line.startsWith("<li>")).join("");
-        const paragraphs = formatted.filter(line => !line.startsWith("<li>")).join("");
-        return paragraphs + <ul>${listItems}</ul>;
+      // Simple conversion of markdown-like bullet points to HTML list
+      let formattedText = text.replace(/^- (.*)/gm, '<li>$1</li>');
+      if (formattedText.includes('<li>')) {
+        formattedText = '<ul>' + formattedText + '</ul>';
       }
-      return formatted.join("");
+      return `<div class="formatted-response">${formattedText}</div>`;
     }
 
-    // Load greeting
+    // --- Core Logic ---
+
+    // Greeting (loads the welcome message from Flask)
     async function loadGreeting() {
       try {
-        const res = await fetch(${API_BASE}/);
-        const data = await res.json();
-        addMessage("🌍 Atlast Travel Assistant: " + formatBotMessage(data.message), "bot");
-      } catch {
-        addMessage("⚠ Could not load greeting.", "bot");
+        const response = await fetch(`${API_BASE}/`);
+        const data = await response.json();
+        addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
+      } catch (err) {
+        addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
       }
     }
 
-    // 🌐 Updated sendMessage() with multilingual support
+    // 🌐 Updated sendMessage() with multilingual support for Auto-Detection
     async function sendMessage() {
       const input = document.getElementById("userInput");
       const userText = input.value.trim();
-      const lang = document.getElementById("language").value; // 👈 get selected language
+      // ❌ REMOVED: const lang = document.getElementById("language").value;
+      // Rationale: We no longer send a selected language,
+      // relying entirely on agent.py's auto-detection of 'userText'.
       if (!userText) return;
 
       addMessage(userText, "user");
@@ -289,10 +331,11 @@
       const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
 
       try {
-        const response = await fetch(${API_BASE}/chat, {
+        const response = await fetch(`${API_BASE}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userText, lang }) // 👈 send lang to backend
+          // ✅ MODIFIED: Only send 'message', rely on agent.py for detection
+          body: JSON.stringify({ message: userText }) 
         });
         const data = await response.json();
 
@@ -300,7 +343,7 @@
         addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
       } catch (err) {
         thinkingMsg.remove();
-        addMessage("⚠ Error: Could not reach Gemini server.", "bot");
+        addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
       }
     }
 
@@ -308,11 +351,12 @@
     const inputField = document.getElementById("userInput");
     inputField.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
-        event.preventDefault();
+        event.preventDefault(); // Prevents the default action of the enter key
         sendMessage();
       }
     });
 
+    // Initialize the chat
     window.onload = loadGreeting;
   </script>
 </body>

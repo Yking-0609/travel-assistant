@@ -1,32 +1,39 @@
-from flask import Flask, request, jsonify, send_from_directory, make_response, redirect
+from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS, cross_origin
 from agent import GeminiAssistant
-from database import TravelDatabase
+from database import TravelDatabase # Assuming this file exists and works
 import os
 
 # --- Initialize Flask app ---
 app = Flask(__name__)
 
-# ✅ Allow all origins and methods (you can restrict later)
-CORS(app, resources={r"/": {"origins": ""}})
+# ✅ Allow all origins and methods 
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- Initialize Gemini assistant and database ---
-assistant = GeminiAssistant()
-db = TravelDatabase()
+try:
+    assistant = GeminiAssistant()
+except ValueError as e:
+    # Handle the case where the API key is missing before running the app
+    print(f"FATAL ERROR: {e}")
+    exit(1)
+
+db = TravelDatabase() # Initialize your database handler
 
 # --- Routes ---
 
 @app.route("/index")
 def index():
-    """Serve the chat HTML page"""
+    """Serve the chat HTML page (for testing directly)"""
     return send_from_directory(".", "index.html")
 
 
 @app.route("/")
-@cross_origin()  # 👈 Explicit CORS for greeting
+@cross_origin() 
 def home():
     """Default greeting route"""
     try:
+        # Use the assistant to get the multilingual greeting
         message = assistant.greet()
         response = make_response(jsonify({"message": message}))
         response.headers["Access-Control-Allow-Origin"] = "*"
@@ -37,26 +44,24 @@ def home():
 
 
 @app.route("/chat", methods=["POST"])
-@cross_origin()  # 👈 Explicit CORS for chat
+@cross_origin() 
 def chat():
-    """Chat endpoint"""
+    """Chat endpoint (Relying on agent.py for Auto-Detection)"""
     data = request.get_json() or {}
     user_text = data.get("message", "").strip()
     
-    # 🌐 The frontend sends 'lang', but agent.py is designed to *auto-detect* # the language from user_text. We only need to pass user_text to let agent.py 
-    # handle the detection and multilingual reply logic internally.
-    # lang = data.get("lang", "en") # <-- Original line (no longer needed in call)
+    # We DO NOT look for 'lang' here. Auto-detection is handled by agent.py.
 
     if not user_text:
         return jsonify({"response": "Please type something."}), 400
 
     try:
-        # 🌐 Updated: Call assistant.ask() only with the user_text.
-        # agent.py will automatically detect the language and reply in it.
-        reply = assistant.ask(user_text)
+        # Pass only the user's text to the assistant
+        reply = assistant.ask(user_text) 
     except Exception as e:
-        print(f"Assistant error: {e}")
-        reply = "Sorry, there was an issue generating a response."
+        # The exception is now likely an APIError from agent.py if the connection/key fails.
+        print(f"Assistant error (check API Key and server logs): {e}")
+        reply = "Sorry, there was an issue generating a response. Please check the backend server logs for API errors."
 
     # Save to database safely
     try:
@@ -81,13 +86,6 @@ def history():
         return jsonify({"error": str(e)}), 500
 
 
-# --- Redirect base to /index for user convenience ---
-@app.route("/home")
-def redirect_home():
-    return redirect("/index")
-
-
-# --- Render-compatible entry point ---
+# --- Run the App ---
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
