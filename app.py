@@ -29,7 +29,7 @@ def home():
         return "Error loading page", 500
 
 # API route to get greeting message
-@app.route("/api/greet", methods=["GET"])
+@app.route("/greet")
 def greet():
     try:
         message = assistant.greet()
@@ -37,6 +37,7 @@ def greet():
     except Exception as e:
         print(f"Greeting error: {e}")
         return jsonify({"message": "Hello! How can I assist you with travel today?"})
+
 
 # Chat route
 @app.route("/chat", methods=["POST"])

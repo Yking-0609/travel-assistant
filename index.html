@@ -266,20 +266,19 @@
     </div>
   </div>
 
- <script>
+  <script>
   // --- Configuration and Helper Functions ---
-  // Use relative paths so it works on live server and locally
-  const API_BASE = "";  // empty string means same origin as your HTML page
+  const API_BASE = "";  // empty string works for same origin (Render or local)
 
   // Helper to add messages to chat and scroll to bottom
   function addMessage(text, sender, className = "") {
     const chatbox = document.getElementById("messages");
     const msg = document.createElement("div");
     msg.className = `message ${sender} ${className}`;
-    msg.innerHTML = text; // Use innerHTML to handle HTML from formatted bot messages
+    msg.innerHTML = text; // Use innerHTML to handle HTML formatting
     chatbox.appendChild(msg);
     chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
-    return msg; // Return the message element for removal/modification
+    return msg;
   }
 
   // Creates the thinking state message HTML
@@ -303,10 +302,10 @@
 
   // --- Core Logic ---
 
-  // Greeting (loads welcome message from Flask)
+  // Greeting: fetch welcome message from Flask
   async function loadGreeting() {
     try {
-      const response = await fetch(`${API_BASE}/`);
+      const response = await fetch(`${API_BASE}/greet`); // Updated to /greet
       if (!response.ok) throw new Error("Server response not OK");
       const data = await response.json();
       addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
@@ -339,7 +338,7 @@
       const data = await response.json();
 
       thinkingMsg.remove();
-      addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
+      addMessage("🤖 Siddhi Assistant: " + formatBotMessage(data.response), "bot");
     } catch (err) {
       console.error(err);
       thinkingMsg.remove();
