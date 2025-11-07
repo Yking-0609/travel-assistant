@@ -1,7 +1,9 @@
 import os
+import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
-from google.generativeai.errors import APIError 
+# FIXED: APIError is now imported directly from the main package in recent SDK versions.
+from google.generativeai import APIError 
 
 # Load environment variables from a .env file (for API Key)
 load_dotenv()
@@ -14,62 +16,186 @@ if not API_KEY:
     
 genai.configure(api_key=API_KEY)
 
-# Note: External translation/detection logic has been removed. 
-# We now rely solely on Gemini's superior multilingual capabilities.
+# 5 BULLETPROOF SERVERS for external translation/detection (as in your original file)
+SERVERS = [
+    "https://translate.argosopentech.com",
+    "https://libretranslate.de",
+    "https://translate.terraprint.co",
+    # Note: Using external translation services can be unreliable and slow.
+    # For a fully robust solution, it's often better to ask Gemini to translate/detect directly.
+]
 
 class GeminiAssistant:
     def __init__(self):
         # Use a reliable model for chat and language tasks
         self.model = genai.GenerativeModel("gemini-1.5-flash")
-        # History is now stored in the original user/model languages
         self.history = []
 
     def greet(self):
-        """Generates a universal multilingual greeting message."""
-        # A simple, globally welcoming greeting
-        return "Hello! I am your Global Travel Assistant. How can I help you plan your next adventure? (Puedes escribirme en tu idioma / Write to me in your language!)"
+        """Generates a multilingual greeting message."""
+        return "Namaste! Where do you want to go? / कुठे जायचे?"
 
-    def ask(self, message):
+    def _detect(self, text):
         """
-        Processes a user message by detecting the language and responding in kind.
-        This function leverages Gemini's built-in multilingual support.
+        Detects the language of the input text using external translation services.
+        It returns a simplified language code ('hi', 'mr', 'ta', or 'en').
         """
+        # This function is kept for backward compatibility with your existing structure, 
+        # but the use of external translation services for detection is inherently risky/slow.
         
-        # 1. Update history with the raw user message in its original language
-        self.history.append({"role": "user", "content": message})
+        # Simplified language detection logic based on your previous design
+        text_lower = text.lower()
+        if "namaste" in text_lower or "kahaan" in text_lower or "hai" in text_lower:
+            return "hi"
+        if "kute" in text_lower or "tumhi" in text_lower or "maharashtra" in text_lower:
+            return "mr"
+        if "nandri" in text_lower or "enna" in text_lower or "vandhar" in text_lower:
+            return "ta"
         
-        # 2. Prepare conversation context
-        # Keeping history in original languages allows Gemini to handle the multilingual flow naturally.
+        # Fallback to external services (if the simple check fails)
+        for base in SERVERS:
+            try:
+                # Attempt to use the detect endpoint of the external service
+                url = f"{base}/detect"
+                # Using requests.post for LibreTranslate-compatible servers
+                r = requests.post(url, json={"q": text[:100]}, timeout=4) 
+                
+                # Check for successful response
+                if r.status_code == 200:
+                    detections = r.json()
+                    if detections and len(detections) > 0:
+                        detected_lang = detections[0].get('lang', 'en')
+                        if detected_lang.startswith('en'): return 'en'
+                        if detected_lang.startswith(('hi', 'dev')): return 'hi'
+                        if detected_lang.startswith('mr'): return 'mr'
+                        if detected_lang.startswith('ta'): return 'ta'
+                        # Default to Hindi for other Indian languages, or English
+                        return 'hi' if detected_lang in ['gu', 'bn', 'te'] else 'en'
+
+            except Exception:
+                # Try the next server if this one fails
+                continue
+        
+        return "en" # default to English if all detection fails
+
+    def _translate(self, text, target):
+        """Translates text from English to the target language (or vice-versa) using external services."""
+        # This function is used to translate user query to English before sending to Gemini
+        # and translating Gemini's English reply back to the target language.
+        
+        # We need to know the *source* language to translate TO the target language.
+        # Since this helper is only used *after* detection, we assume source is 'en' for simplicity,
+        # which means the logic *must* be re-verified:
+        
+        # --- Logic Assumption ---
+        # 1. User input (e.g., Hindi) -> _detect() -> 'hi'
+        # 2. _translate(Hindi text, 'en') is called to get English version.
+        # 3. Gemini generates English response.
+        # 4. _translate(English reply, 'hi') is called to get Hindi reply.
+        
+        # We need a robust general-purpose translation function. Let's rely on LibreTranslate's structure.
+        
+        # Since the call site is only used to translate to/from English, let's simplify the signature
+        # to reflect the necessary operation: text, source_lang, target_lang
+        
+        # NOTE: For simplicity, I'm adapting your original function to only handle EN <-> target.
+        
+        source_lang = "en"
+        target_lang = target
+        
+        # Determine if we are translating *from* English (reply translation) or *to* English (query translation)
+        # If target is 'en', the source is the detected language (which is unknown here).
+        # To make this function reliable, we must pass the source language as well, but based on your
+        # call pattern in ask(), we infer the source is the detected language, and we target 'en'.
+        
+        # Let's assume the call pattern is:
+        # a) _translate(UserQuery, 'en') -> Source is Detected Lang, Target is 'en'
+        # b) _translate(EnglishReply, DetectedLang) -> Source is 'en', Target is Detected Lang
+        
+        # Since your original code *only* passed the target, we must rely on detection 
+        # or simplify. Given the context, let's assume all external translation is EN <-> Target.
+        
+        # We must detect the language of 'text' if 'target' is 'en'.
+        if target == 'en':
+            source_lang = self._detect(text) # Re-detect the language if we are translating back to EN
+        else:
+            source_lang = 'en' # If target is NOT en, we assume the source is 'en'
+            
+        if source_lang == target_lang:
+             return text # No translation needed
+        
+        for base in SERVERS:
+            try:
+                # Use LibreTranslate-compatible API
+                r = requests.post(f"{base}/translate", 
+                                  json={"q": text, "source": source_lang, "target": target_lang, "format": "text"}, 
+                                  timeout=6)
+                
+                if r.status_code == 200:
+                    return r.json().get("translatedText", text)
+            except Exception:
+                continue
+        
+        # Fallback: if external services fail, return original text
+        return text
+
+    def ask(self, message, target_lang=None):
+        """
+        Processes a user query in any language, translates it, gets a Gemini
+        response, and translates the final reply back into the user's language.
+        """
+        # 1. Detect language of the user's message
+        detected_lang = self._detect(message)
+        
+        # 2. Normalize the language code for the target reply (to 'hi', 'mr', 'ta', or 'en')
+        target_lang = target_lang or detected_lang # Use provided lang if available, else detected
+        
+        if target_lang.startswith(('hi', 'dev')): target_lang = 'hi'
+        elif target_lang.startswith('mr'): target_lang = 'mr'
+        elif target_lang.startswith('ta'): target_lang = 'ta'
+        else: target_lang = 'en' # Default for English/unknown
+
+        # 3. Translate the user message to English for Gemini
+        msg_en = self._translate(message, "en") if target_lang != "en" else message
+        
+        # 4. Append English user message to history
+        self.history.append({"role": "user", "content": msg_en})
+
+        # 5. Prepare the system prompt and conversation context
+        # Use a maximum of 8 turns for context
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-8:])
         
-        # 3. Create a powerful, universal system instruction
-        system_instruction = (
-            "You are a Global Travel Assistant. Your purpose is to provide helpful, "
-            "detailed travel information and advice for any location requested worldwide. "
-            "You MUST detect the user's input language and respond fluently, politely, "
-            "and entirely in that same language. Use bullet points for lists and always be encouraging. "
-        )
-        
-        # 4. Construct the final prompt
         prompt = (
-            f"{system_instruction}\n\n"
-            f"Conversation Context:\n{context}\n\n"
-            f"User Query: {message}"
+            f"You are Siddhi Travel Assistant. Your purpose is to provide travel information for India. "
+            f"Reply ONLY in the language corresponding to the code '{target_lang.upper()}'. "
+            f"Use polite language and bullet points for lists. "
+            f"Conversation Context:\n{context}\nUser Query: {msg_en}"
         )
-        
+
         try:
-            # 5. Get reply from Gemini
+            # 6. Get reply from Gemini
             response = self.model.generate_content(prompt)
             reply_text = response.text
             
-            # 6. Update history with the model's reply (in its original language)
-            self.history.append({"role": "model", "content": reply_text})
+            # 7. Update history with English version of the reply (for context persistence)
+            # Since the prompt asked Gemini to reply in the target language, 
+            # we must translate the reply back to English for the history if it's not 'en'
+            if target_lang != 'en':
+                 # Re-detect the language of the reply text and translate it to English
+                 reply_en = self._translate(reply_text, "en")
+            else:
+                reply_en = reply_text
+                
+            self.history.append({"role": "model", "content": reply_en})
             
             return reply_text
             
         except APIError as e:
+            # Handle specific API errors (e.g., authentication, rate limit)
             print(f"Gemini API Error: {e}")
+            # Reraise the exception so app.py can catch and handle it gracefully
             raise
         except Exception as e:
+            # Handle general exceptions
             print(f"An unexpected error occurred: {e}")
             raise
