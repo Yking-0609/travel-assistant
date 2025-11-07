@@ -1,80 +1,76 @@
+# agent.py
 import os
+import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# 🌐 Added import for translation
-from googletrans import Translator  
+# -------------------------------------------------------
+# Load .env
+# -------------------------------------------------------
+load_dotenv()
+GEMINI_KEY = os.getenv("GOOGLE_API_KEY")
+if not GEMINI_KEY:
+    raise ValueError("Add GOOGLE_API_KEY=your_key in .env")
 
-# -----------------------------------------------------------
-# Load API key from .env
-# -----------------------------------------------------------
-# Ensure .env is in the same folder as agent.py
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+genai.configure(api_key=GEMINI_KEY)
 
-# ✅ Look up the variable by name, not by the key itself
-api_key = os.getenv("GOOGLE_API_KEY")
-print("DEBUG GOOGLE_API_KEY:", api_key)  # Debugging – remove later
+# FREE translation servers (auto-fallback)
+FREE_SERVERS = [
+    "https://libretranslate.de/translate",
+    "https://translate.terraprint.co/translate",
+    "https://translate.argosopentech.com/translate"
+]
 
-if not api_key or not api_key.strip():
-    raise ValueError("❌ GOOGLE_API_KEY not found in environment. Please set it in .env")
-
-# Configure Gemini client
-genai.configure(api_key=api_key)
-
-# 🌐 Initialize Translator (Googletrans)
-translator = Translator()
-
-# -----------------------------------------------------------
-# Gemini Travel Assistant
-# -----------------------------------------------------------
+# -------------------------------------------------------
+# Gemini Travel Assistant (Multilingual + Bulletproof)
+# -------------------------------------------------------
 class GeminiAssistant:
-    def __init__(self, model_name="gemini-2.5-flash"):  # or "gemini-1.5-pro"
+    def __init__(self, model_name="gemini-1.5-flash"):
         self.model = genai.GenerativeModel(model_name)
         self.conversation = []
 
     def greet(self) -> str:
-        """Return a welcome message."""
-        return "Hello! 👋 I'm your travel assistant by Atlast Tours and Travels. Where would you like to go?"
+        return "Hello! I'm your travel assistant by Atlast Tours & Travels. Where would you like to go?"
 
-    # 🌐 Modified definition to accept optional 'lang' parameter
+    def _translate(self, text: str, target: str = "en", source: str = "auto") -> str:
+        if not text.strip():
+            return text
+        payload = {"q": text, "source": source, "target": target, "format": "text"}
+        for url in FREE_SERVERS:
+            try:
+                r = requests.post(url, json=payload, timeout=6)
+                if r.status_code == 200:
+                    return r.json()["translatedText"]
+            except:
+                continue
+        print("All translation servers down – returning original text")
+        return text  # ultimate fallback
+
     def ask(self, user_message: str, lang: str = "en") -> str:
-        """Send a message to Gemini and return the reply."""
         try:
-            # 🌐 Translate user input to English if needed
-            if lang != "en":
-                try:
-                    user_message = translator.translate(user_message, src=lang, dest="en").text
-                except Exception as e:
-                    print(f"⚠️ Translation error (input): {e}")
+            # 1. User → English
+            user_en = self._translate(user_message, "en", lang) if lang != "en" else user_message
 
-            # Save the user message to the conversation history
-            self.conversation.append({"role": "user", "content": user_message})
-
-            # Build conversation context for the model
+            # 2. Chat with Gemini
+            self.conversation.append({"role": "user", "content": user_en})
             context = "\n".join(
-                f"{msg['role'].capitalize()}: {msg['content']}"
-                for msg in self.conversation
+                f"{m['role'].capitalize()}: {m['content']}"
+                for m in self.conversation[-12:]
             )
-
-            # Generate Gemini response
-            response = self.model.generate_content(
-                f"You are a helpful travel assistant. "
-                f"Provide friendly travel advice, destination guides, and itineraries.\n\n{context}"
+            prompt = (
+                "You are a fun, expert travel assistant for Atlast Tours.\n"
+                "Reply in short bullet points. Be exciting!\n\n" + context
             )
+            reply_en = self.model.generate_content(prompt).text.strip()
 
-            reply = response.text.strip()
+            # 3. Save
+            self.conversation.append({"role": "assistant", "content": reply_en})
 
-            # Save the assistant's reply
-            self.conversation.append({"role": "assistant", "content": reply})
-
-            # 🌐 Translate reply back to user's selected language
-            if lang != "en":
-                try:
-                    reply = translator.translate(reply, src="en", dest=lang).text
-                except Exception as e:
-                    print(f"⚠️ Translation error (output): {e}")
+            # 4. English → User language
+            reply = self._translate(reply_en, lang) if lang != "en" else reply_en
 
             return reply
 
         except Exception as e:
-            return f"⚠️ Error: {str(e)}"
+            print(f"Error: {e}")
+            return "I'm planning your perfect trip! Try again in 10 sec"
