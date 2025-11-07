@@ -154,7 +154,6 @@
 
     .chat-input button:hover { background:#1A73E8; }
 
-    /* Thinking animation */
     .thinking { 
       display:flex; align-items:center; 
       font-size:16px; color:#888; 
@@ -181,7 +180,6 @@
     ::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
     ::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
 
-    /* 📱 Responsive Design */
     @media (max-width: 768px) {
       .chat-header { font-size: 18px; padding: 15px; }
       .chat-input input { font-size: 14px; padding: 12px; }
@@ -205,10 +203,21 @@
       🌍 Atlast Tours And Travel Assistant
       <img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" class="plane" width="40" alt="plane">
     </div>
+
+    <!-- 🌐 Language Selector -->
+    <div style="text-align:center; background:#f0f8ff; padding:6px;">
+      <label for="language">🌐 Choose Language: </label>
+      <select id="language" style="padding:6px; border-radius:8px;">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="mr">मराठी (Marathi)</option>
+      </select>
+    </div>
+
     <div class="chat-messages" id="messages"></div>
     <div class="chat-input">
       <input type="text" id="userInput" placeholder="Ask about a destination, itinerary, or travel tips..." />
-      <button onclick="sendMessage()">Send</button>
+      <button onclick="sendMessage()">Search</button>
     </div>
   </div>
 
@@ -266,10 +275,11 @@
       }
     }
 
-    // Send user message
+    // 🌐 Updated sendMessage() with multilingual support
     async function sendMessage() {
       const input = document.getElementById("userInput");
       const userText = input.value.trim();
+      const lang = document.getElementById("language").value; // 👈 get selected language
       if (!userText) return;
 
       addMessage(userText, "user");
@@ -282,7 +292,7 @@
         const response = await fetch(`${API_BASE}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userText }),
+          body: JSON.stringify({ message: userText, lang }) // 👈 send lang to backend
         });
         const data = await response.json();
 

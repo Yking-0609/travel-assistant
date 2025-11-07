@@ -1,0 +1,1 @@
+DATABASE_URL=postgresql://travel_user:app123@localhost:5432/travel_assistance

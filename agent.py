@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 
+# 🌐 Added import for translation
+from googletrans import Translator  
+
 # -----------------------------------------------------------
 # Load API key from .env
 # -----------------------------------------------------------
@@ -18,6 +21,8 @@ if not api_key or not api_key.strip():
 # Configure Gemini client
 genai.configure(api_key=api_key)
 
+# 🌐 Initialize Translator (Googletrans)
+translator = Translator()
 
 # -----------------------------------------------------------
 # Gemini Travel Assistant
@@ -31,9 +36,17 @@ class GeminiAssistant:
         """Return a welcome message."""
         return "Hello! 👋 I'm your travel assistant by Atlast Tours and Travels. Where would you like to go?"
 
-    def ask(self, user_message: str) -> str:
+    # 🌐 Modified definition to accept optional 'lang' parameter
+    def ask(self, user_message: str, lang: str = "en") -> str:
         """Send a message to Gemini and return the reply."""
         try:
+            # 🌐 Translate user input to English if needed
+            if lang != "en":
+                try:
+                    user_message = translator.translate(user_message, src=lang, dest="en").text
+                except Exception as e:
+                    print(f"⚠️ Translation error (input): {e}")
+
             # Save the user message to the conversation history
             self.conversation.append({"role": "user", "content": user_message})
 
@@ -53,6 +66,13 @@ class GeminiAssistant:
 
             # Save the assistant's reply
             self.conversation.append({"role": "assistant", "content": reply})
+
+            # 🌐 Translate reply back to user's selected language
+            if lang != "en":
+                try:
+                    reply = translator.translate(reply, src="en", dest=lang).text
+                except Exception as e:
+                    print(f"⚠️ Translation error (output): {e}")
 
             return reply
 

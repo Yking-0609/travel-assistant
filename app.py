@@ -42,12 +42,16 @@ def chat():
     """Chat endpoint"""
     data = request.get_json() or {}
     user_text = data.get("message", "").strip()
+    
+    # 🌐 NEW: capture selected language from frontend (default English)
+    lang = data.get("lang", "en")
 
     if not user_text:
         return jsonify({"response": "Please type something."}), 400
 
     try:
-        reply = assistant.ask(user_text)
+        # 🌐 Pass selected language to assistant
+        reply = assistant.ask(user_text, lang)
     except Exception as e:
         print(f"Assistant error: {e}")
         reply = "Sorry, there was an issue generating a response."
