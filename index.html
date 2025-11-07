@@ -268,96 +268,95 @@
 
   <script>
     // --- Configuration and Helper Functions ---
-    const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = "http://127.0.0.1:5000"; // Flask server URL
 
-    // Helper to add messages to chat and scroll to bottom
-    function addMessage(text, sender, className = "") {
-      const chatbox = document.getElementById("messages");
-      const msg = document.createElement("div");
-      msg.className = `message ${sender} ${className}`;
-      msg.innerHTML = text; // Use innerHTML to handle HTML from createThinkingMessage and formattedBotMessage
-      
-      chatbox.appendChild(msg);
-      chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
-      return msg; // Return the message element for removal/modification
-    }
+// Helper to add messages to chat and scroll to bottom
+function addMessage(text, sender, className = "") {
+  const chatbox = document.getElementById("messages");
+  const msg = document.createElement("div");
+  msg.className = `message ${sender} ${className}`;
+  msg.innerHTML = text;
+  chatbox.appendChild(msg);
+  chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
+  return msg; // Return for later removal
+}
 
-    // Creates the thinking state message HTML
-    function createThinkingMessage() {
-      return `
-        <div class="flex items-center space-x-2">
-          <i class="fas fa-magic text-yellow-500"></i>
-          <span>Thinking...</span>
-        </div>
-      `;
-    }
+// Creates the thinking state message HTML
+function createThinkingMessage() {
+  return `
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-magic text-yellow-500"></i>
+      <span>Thinking...</span>
+    </div>
+  `;
+}
 
-    // Formats the bot message (especially for bullet points)
-    function formatBotMessage(text) {
-      // Simple conversion of markdown-like bullet points to HTML list
-      let formattedText = text.replace(/^- (.*)/gm, '<li>$1</li>');
-      if (formattedText.includes('<li>')) {
-        formattedText = '<ul>' + formattedText + '</ul>';
-      }
-      return `<div class="formatted-response">${formattedText}</div>`;
-    }
+// Formats the bot message (for bullet points)
+function formatBotMessage(text) {
+  let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
+  if (formattedText.includes('<li>')) {
+    formattedText = '<ul>' + formattedText + '</ul>';
+  }
+  return `<div class="formatted-response">${formattedText}</div>`;
+}
 
-    // --- Core Logic ---
+// --- Core Logic ---
 
-    // Greeting (loads the welcome message from Flask)
-    async function loadGreeting() {
-      try {
-        const response = await fetch(`${API_BASE}/`);
-        const data = await response.json();
-        addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
-      } catch (err) {
-        addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
-      }
-    }
+// Greeting (loads welcome message from Flask)
+async function loadGreeting() {
+  try {
+    const response = await fetch(`${API_BASE}/`);
+    if (!response.ok) throw new Error("Server response not OK");
+    const data = await response.json();
+    addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
+  } catch (err) {
+    console.error(err);
+    addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
+  }
+}
 
-    // 🌐 Updated sendMessage() with multilingual support for Auto-Detection
-    async function sendMessage() {
-      const input = document.getElementById("userInput");
-      const userText = input.value.trim();
-      // ❌ REMOVED: const lang = document.getElementById("language").value;
-      // Rationale: We no longer send a selected language,
-      // relying entirely on agent.py's auto-detection of 'userText'.
-      if (!userText) return;
+// Send user message
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const userText = input.value.trim();
+  if (!userText) return;
 
-      addMessage(userText, "user");
-      input.value = "";
+  addMessage(userText, "user");
+  input.value = "";
 
-      const thinkingHTML = createThinkingMessage();
-      const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
+  const thinkingHTML = createThinkingMessage();
+  const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
 
-      try {
-        const response = await fetch(`${API_BASE}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // ✅ MODIFIED: Only send 'message', rely on agent.py for detection
-          body: JSON.stringify({ message: userText }) 
-        });
-        const data = await response.json();
-
-        thinkingMsg.remove();
-        addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
-      } catch (err) {
-        thinkingMsg.remove();
-        addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
-      }
-    }
-
-    // Enter key support
-    const inputField = document.getElementById("userInput");
-    inputField.addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault(); // Prevents the default action of the enter key
-        sendMessage();
-      }
+  try {
+    const response = await fetch(`${API_BASE}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userText })
     });
 
-    // Initialize the chat
-    window.onload = loadGreeting;
+    if (!response.ok) throw new Error("Server response not OK");
+    const data = await response.json();
+
+    thinkingMsg.remove();
+    addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
+  } catch (err) {
+    console.error(err);
+    thinkingMsg.remove();
+    addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
+  }
+}
+
+// Enter key support
+document.getElementById("userInput").addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
+// Initialize the chat
+window.onload = loadGreeting;
+
   </script>
 </body>
 </html>
