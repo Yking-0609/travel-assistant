@@ -64,5 +64,6 @@ function addMessage(text, sender, isThinking = false) {
   return msg; // Return the message element to control removal later
 }
 
+
 // Load greeting on page start
 window.onload = loadGreeting;
