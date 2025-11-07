@@ -6,27 +6,24 @@ import os
 
 # --- Initialize Flask app ---
 app = Flask(__name__)
-CORS(app)  # Allow all origins by default
+CORS(app)
 
 # --- Initialize Gemini assistant and database ---
 try:
     assistant = GeminiAssistant()
-except ValueError as e:
+except Exception as e:
     print(f"FATAL ERROR: {e}")
     exit(1)
 
-db = TravelDatabase()  # Initialize your database handler
+db = TravelDatabase()
 
 # --- Routes ---
-
 @app.route("/index")
 def index():
-    """Serve chat HTML page (for testing)."""
     return send_from_directory(".", "index.html")
 
 @app.route("/")
 def home():
-    """Default greeting route."""
     try:
         message = assistant.greet()
         return jsonify({"message": message})
@@ -36,7 +33,6 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    """Chat endpoint with auto-detect language support."""
     data = request.get_json() or {}
     user_text = data.get("message", "").strip()
 
@@ -49,7 +45,7 @@ def chat():
         print(f"Assistant error: {e}")
         reply = "Sorry, there was an issue generating a response. Please try again later."
 
-    # Save chat history in database
+    # Save chat history
     try:
         db.save_search(user_text, reply)
     except Exception as e:
@@ -59,7 +55,6 @@ def chat():
 
 @app.route("/history", methods=["GET"])
 def history():
-    """Return stored user queries and bot replies."""
     try:
         data = db.get_all_searches()
         return jsonify(data)
