@@ -2,8 +2,9 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
-# FIXED: APIError is now imported directly from the main package in recent SDK versions.
-from google.generativeai import APIError 
+# FIXED: The specific error class APIError is now imported from the exceptions submodule, 
+# which is more stable across recent SDK versions.
+from google.generativeai import exceptions 
 
 # Load environment variables from a .env file (for API Key)
 load_dotenv()
@@ -40,8 +41,7 @@ class GeminiAssistant:
         Detects the language of the input text using external translation services.
         It returns a simplified language code ('hi', 'mr', 'ta', or 'en').
         """
-        # This function is kept for backward compatibility with your existing structure, 
-        # but the use of external translation services for detection is inherently risky/slow.
+        # This function is kept for backward compatibility with your existing structure.
         
         # Simplified language detection logic based on your previous design
         text_lower = text.lower()
@@ -80,42 +80,11 @@ class GeminiAssistant:
 
     def _translate(self, text, target):
         """Translates text from English to the target language (or vice-versa) using external services."""
-        # This function is used to translate user query to English before sending to Gemini
-        # and translating Gemini's English reply back to the target language.
-        
-        # We need to know the *source* language to translate TO the target language.
-        # Since this helper is only used *after* detection, we assume source is 'en' for simplicity,
-        # which means the logic *must* be re-verified:
-        
-        # --- Logic Assumption ---
-        # 1. User input (e.g., Hindi) -> _detect() -> 'hi'
-        # 2. _translate(Hindi text, 'en') is called to get English version.
-        # 3. Gemini generates English response.
-        # 4. _translate(English reply, 'hi') is called to get Hindi reply.
-        
-        # We need a robust general-purpose translation function. Let's rely on LibreTranslate's structure.
-        
-        # Since the call site is only used to translate to/from English, let's simplify the signature
-        # to reflect the necessary operation: text, source_lang, target_lang
-        
-        # NOTE: For simplicity, I'm adapting your original function to only handle EN <-> target.
         
         source_lang = "en"
         target_lang = target
         
-        # Determine if we are translating *from* English (reply translation) or *to* English (query translation)
-        # If target is 'en', the source is the detected language (which is unknown here).
-        # To make this function reliable, we must pass the source language as well, but based on your
-        # call pattern in ask(), we infer the source is the detected language, and we target 'en'.
-        
-        # Let's assume the call pattern is:
-        # a) _translate(UserQuery, 'en') -> Source is Detected Lang, Target is 'en'
-        # b) _translate(EnglishReply, DetectedLang) -> Source is 'en', Target is Detected Lang
-        
-        # Since your original code *only* passed the target, we must rely on detection 
-        # or simplify. Given the context, let's assume all external translation is EN <-> Target.
-        
-        # We must detect the language of 'text' if 'target' is 'en'.
+        # Determine the source language based on the target
         if target == 'en':
             source_lang = self._detect(text) # Re-detect the language if we are translating back to EN
         else:
@@ -181,7 +150,7 @@ class GeminiAssistant:
             # Since the prompt asked Gemini to reply in the target language, 
             # we must translate the reply back to English for the history if it's not 'en'
             if target_lang != 'en':
-                 # Re-detect the language of the reply text and translate it to English
+                 # Using the same translation function but now translating the reply back to English
                  reply_en = self._translate(reply_text, "en")
             else:
                 reply_en = reply_text
@@ -190,7 +159,7 @@ class GeminiAssistant:
             
             return reply_text
             
-        except APIError as e:
+        except exceptions.APIError as e: # Catch using the exceptions submodule
             # Handle specific API errors (e.g., authentication, rate limit)
             print(f"Gemini API Error: {e}")
             # Reraise the exception so app.py can catch and handle it gracefully
