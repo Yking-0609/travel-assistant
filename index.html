@@ -266,97 +266,98 @@
     </div>
   </div>
 
-  <script>
-    // --- Configuration and Helper Functions ---
-const API_BASE = "http://127.0.0.1:5000"; // Flask server URL
+ <script>
+  // --- Configuration and Helper Functions ---
+  // Use relative paths so it works on live server and locally
+  const API_BASE = "";  // empty string means same origin as your HTML page
 
-// Helper to add messages to chat and scroll to bottom
-function addMessage(text, sender, className = "") {
-  const chatbox = document.getElementById("messages");
-  const msg = document.createElement("div");
-  msg.className = `message ${sender} ${className}`;
-  msg.innerHTML = text;
-  chatbox.appendChild(msg);
-  chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
-  return msg; // Return for later removal
-}
-
-// Creates the thinking state message HTML
-function createThinkingMessage() {
-  return `
-    <div class="flex items-center space-x-2">
-      <i class="fas fa-magic text-yellow-500"></i>
-      <span>Thinking...</span>
-    </div>
-  `;
-}
-
-// Formats the bot message (for bullet points)
-function formatBotMessage(text) {
-  let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
-  if (formattedText.includes('<li>')) {
-    formattedText = '<ul>' + formattedText + '</ul>';
+  // Helper to add messages to chat and scroll to bottom
+  function addMessage(text, sender, className = "") {
+    const chatbox = document.getElementById("messages");
+    const msg = document.createElement("div");
+    msg.className = `message ${sender} ${className}`;
+    msg.innerHTML = text; // Use innerHTML to handle HTML from formatted bot messages
+    chatbox.appendChild(msg);
+    chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
+    return msg; // Return the message element for removal/modification
   }
-  return `<div class="formatted-response">${formattedText}</div>`;
-}
 
-// --- Core Logic ---
-
-// Greeting (loads welcome message from Flask)
-async function loadGreeting() {
-  try {
-    const response = await fetch(`${API_BASE}/`);
-    if (!response.ok) throw new Error("Server response not OK");
-    const data = await response.json();
-    addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
-  } catch (err) {
-    console.error(err);
-    addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
+  // Creates the thinking state message HTML
+  function createThinkingMessage() {
+    return `
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-magic text-yellow-500"></i>
+        <span>Thinking...</span>
+      </div>
+    `;
   }
-}
 
-// Send user message
-async function sendMessage() {
-  const input = document.getElementById("userInput");
-  const userText = input.value.trim();
-  if (!userText) return;
-
-  addMessage(userText, "user");
-  input.value = "";
-
-  const thinkingHTML = createThinkingMessage();
-  const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
-
-  try {
-    const response = await fetch(`${API_BASE}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userText })
-    });
-
-    if (!response.ok) throw new Error("Server response not OK");
-    const data = await response.json();
-
-    thinkingMsg.remove();
-    addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
-  } catch (err) {
-    console.error(err);
-    thinkingMsg.remove();
-    addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
+  // Formats the bot message (for bullet points)
+  function formatBotMessage(text) {
+    let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
+    if (formattedText.includes('<li>')) {
+      formattedText = '<ul>' + formattedText + '</ul>';
+    }
+    return `<div class="formatted-response">${formattedText}</div>`;
   }
-}
 
-// Enter key support
-document.getElementById("userInput").addEventListener("keydown", function(event) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    sendMessage();
+  // --- Core Logic ---
+
+  // Greeting (loads welcome message from Flask)
+  async function loadGreeting() {
+    try {
+      const response = await fetch(`${API_BASE}/`);
+      if (!response.ok) throw new Error("Server response not OK");
+      const data = await response.json();
+      addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
+    } catch (err) {
+      console.error(err);
+      addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
+    }
   }
-});
 
-// Initialize the chat
-window.onload = loadGreeting;
+  // Send user message
+  async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const userText = input.value.trim();
+    if (!userText) return;
 
-  </script>
+    addMessage(userText, "user");
+    input.value = "";
+
+    const thinkingHTML = createThinkingMessage();
+    const thinkingMsg = addMessage(thinkingHTML, "bot", "thinking-msg");
+
+    try {
+      const response = await fetch(`${API_BASE}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText })
+      });
+
+      if (!response.ok) throw new Error("Server response not OK");
+      const data = await response.json();
+
+      thinkingMsg.remove();
+      addMessage("🤖 Atlast's Assistant: " + formatBotMessage(data.response), "bot");
+    } catch (err) {
+      console.error(err);
+      thinkingMsg.remove();
+      addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
+    }
+  }
+
+  // Enter key support
+  document.getElementById("userInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Initialize the chat
+  window.onload = loadGreeting;
+</script>
+
 </body>
 </html>

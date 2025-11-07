@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from agent import GeminiAssistant
-from database import TravelDatabase  # Make sure this exists
+from database import TravelDatabase
 import os
 
 # --- Initialize Flask app ---
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
 # --- Initialize Gemini assistant and database ---
@@ -18,12 +18,19 @@ except Exception as e:
 db = TravelDatabase()
 
 # --- Routes ---
-@app.route("/index")
-def index():
-    return send_from_directory(".", "index.html")
 
+# Serve the index.html at root
 @app.route("/")
 def home():
+    try:
+        return send_from_directory(".", "index.html")
+    except Exception as e:
+        print(f"Error serving index.html: {e}")
+        return "Error loading page", 500
+
+# API route to get greeting message
+@app.route("/api/greet", methods=["GET"])
+def greet():
     try:
         message = assistant.greet()
         return jsonify({"message": message})
@@ -31,6 +38,7 @@ def home():
         print(f"Greeting error: {e}")
         return jsonify({"message": "Hello! How can I assist you with travel today?"})
 
+# Chat route
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json() or {}
@@ -53,6 +61,7 @@ def chat():
 
     return jsonify({"response": reply})
 
+# History route
 @app.route("/history", methods=["GET"])
 def history():
     try:
