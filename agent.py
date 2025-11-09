@@ -38,8 +38,7 @@ class GeminiAssistant:
     # --- Greeting ---
     def greet(self):
         """Provide a friendly multilingual greeting."""
-        # 🎯 Name Reverted to Atlast
-        return "👋 Namaste! Welcome to **Atlast Travel Assistant**. Where would you like to go today?"
+        return "👋 Namaste! Welcome to **Atlast Travel Assistant**. Where would you like to go today? (We cover destinations worldwide!)"
 
     # --- Translation helper (fallback only) ---
     def _translate(self, text, target):
@@ -66,12 +65,11 @@ class GeminiAssistant:
         try:
             lang = detect(message)
         except lang_detect_exception.LangDetectException:
-            # Fallback for empty strings or highly ambiguous text
             lang = "en"
         except Exception:
             lang = "en"
 
-        # ⚡️ FIX: Override common misclassifications for short/ambiguous inputs (Language fix preserved)
+        # ⚡️ Language Fixes (Preventing Italian/Nepali misclassification)
         message_lower = message.strip().lower()
         
         # 2a. Common English greetings fix (prevents 'it' / Italian)
@@ -90,12 +88,12 @@ class GeminiAssistant:
         self.history.append({"role": "user", "content": message})
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
-        # 🎯 Prompt Reinforcement: Name Reverted, Stricter Instructions Kept
+        # 🎯 FIX 1: Removed India-only specialization, now globally focused
         prompt = (
-            f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in travel across India.\n"
+            f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in **global travel**.\n"
             f"User language code: {lang}. This is the language you **MUST** reply in.\n"
             f"**STRICTLY** reply in the language with the code '{lang}'.\n"
-            f"If the question is about a place outside India, politely state that you specialize in India, as you did before. Do this response in the language '{lang}'.\n"
+            f"If the question is about travel, give detailed and polite suggestions for destinations worldwide.\n"
             f"Context:\n{context}\n\nUser: {message}"
         )
 
