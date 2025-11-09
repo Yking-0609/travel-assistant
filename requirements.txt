@@ -2,5 +2,6 @@ flask
 flask-cors
 google-generativeai
 langdetect
+python-dotenv
 requests
 gunicorn
