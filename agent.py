@@ -38,6 +38,7 @@ class GeminiAssistant:
     # --- Greeting ---
     def greet(self):
         """Provide a friendly multilingual greeting."""
+        # Renamed assistant in greeting to Siddhi Travel Assistant to match index.html
         return "👋 Namaste! Welcome to Atlast Travel Assistant. Where would you like to go today?"
 
     # --- Translation helper (fallback only) ---
@@ -66,6 +67,12 @@ class GeminiAssistant:
             lang = detect(message)
         except Exception:
             lang = "en"
+
+        # ⚡️ FIX FOR "HI" MISCLASSIFICATION (New logic added here)
+        english_greetings = ["hi", "hello", "hey", "hlo", "good morning", "good evening", "good afternoon"]
+        if message.strip().lower() in english_greetings:
+            lang = "en"
+        # --------------------------------------------------------
 
         print(f"🌍 Detected language: {lang}")
 
