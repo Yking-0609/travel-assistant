@@ -4,7 +4,6 @@ from agent import GeminiAssistant
 from database import TravelDatabase
 import os
 
-# --- Initialize Flask app ---
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
@@ -17,22 +16,11 @@ except Exception as e:
 
 db = TravelDatabase()
 
-# --- Serve frontend ---
+# ✅ Serve index.html on root
 @app.route("/")
-def index():
+def serve_index():
     return send_from_directory(".", "index.html")
 
-# --- Greeting route ---
-@app.route("/greet")
-def greet():
-    try:
-        message = assistant.greet()
-        return jsonify({"message": message})
-    except Exception as e:
-        print(f"Greeting error: {e}")
-        return jsonify({"message": "Hello! How can I assist you with travel today?"})
-
-# --- Chat route with auto language detection ---
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json() or {}
@@ -42,7 +30,7 @@ def chat():
         return jsonify({"response": "Please type something."}), 400
 
     try:
-        reply = assistant.ask(user_text)  # Auto-detect language in agent.py
+        reply = assistant.ask(user_text)
     except Exception as e:
         print(f"Assistant error: {e}")
         reply = "Sorry, there was an issue generating a response. Please try again later."
@@ -54,7 +42,6 @@ def chat():
 
     return jsonify({"response": reply})
 
-# --- History route ---
 @app.route("/history", methods=["GET"])
 def history():
     try:
@@ -64,7 +51,6 @@ def history():
         print(f"History fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- Run app ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
