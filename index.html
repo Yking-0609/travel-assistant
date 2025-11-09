@@ -220,7 +220,7 @@
   <div class="map-background"></div>
   <div class="chat-container">
     <div class="chat-header">
-      Siddhi Travel Assistant ✈️
+      Atlast Travel Assistant ✈️
     </div>
     
     <div id="messages">
@@ -300,7 +300,7 @@
       const response = await fetch(`${API_BASE}/greet`); // Updated to /greet
       if (!response.ok) throw new Error("Server response not OK");
       const data = await response.json();
-      addMessage(`🌍 Siddhi Assistant: ${data.message}`, "bot");
+      addMessage(`🌍 Atlast Assistant: ${data.message}`, "bot");
     } catch (err) {
       console.error(err);
       addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
@@ -330,7 +330,7 @@
       const data = await response.json();
 
       thinkingMsg.remove();
-      addMessage("🤖 Siddhi Assistant: " + formatBotMessage(data.response), "bot");
+      addMessage("🤖 Atlast Assistant: " + formatBotMessage(data.response), "bot");
     } catch (err) {
       console.error(err);
       thinkingMsg.remove();
