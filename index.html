@@ -182,21 +182,6 @@
       box-shadow: 0 2px #cfa800;
     }
 
-    /* Language Dropdown Style */
-    #language {
-      padding: 0.75rem 1rem;
-      border: 2px solid #ddd;
-      border-radius: 2rem;
-      font-size: 0.9rem;
-      background-color: #fff;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.3s;
-      /* Style to visually show it's less critical for input */
-      pointer-events: none; 
-      opacity: 0.5;
-    }
-    
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .chat-container {
@@ -208,18 +193,14 @@
         border-radius: 0;
       }
       .chat-input-area {
-        flex-direction: column;
-        gap: 10px;
+        flex-direction: row; /* Keep input and button side-by-side */
+        gap: 0.5rem;
       }
       #userInput {
-        width: 100%;
-        margin-right: 0;
+        flex-grow: 1;
       }
       .chat-button {
-        width: 100%;
-      }
-      #language {
-        width: 100%;
+        width: auto;
       }
     }
 
@@ -239,13 +220,18 @@
   <div class="map-background"></div>
   <div class="chat-container">
     <div class="chat-header">
-      Atlast Travel Assistant ✈️
+      Siddhi Travel Assistant ✈️
     </div>
     
     <div id="messages">
-      <!-- Messages will appear here -->
-    </div>
+      </div>
     
+    <div class="chat-input-area">
+      <input type="text" id="userInput" placeholder="Ask about travel to India..." autofocus>
+      <button class="chat-button" onclick="sendMessage()">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
   </div>
 
   <script>
@@ -275,12 +261,36 @@
 
   // Formats the bot message (for bullet points)
   function formatBotMessage(text) {
+    // Correctly handle list items by ensuring they are wrapped in <ul>
     let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
+    
+    // Check if any list items were created
     if (formattedText.includes('<li>')) {
-      formattedText = '<ul>' + formattedText + '</ul>';
+        // Simple heuristic to wrap list items if they appear at the start of the text
+        // (This is a basic check and may not handle complex formatting perfectly)
+        formattedText = formattedText.trim();
+        if (formattedText.startsWith('<li>')) {
+            formattedText = '<ul>' + formattedText + '</ul>';
+        } else {
+            // Find the first <li> and wrap subsequent list items
+            const parts = formattedText.split('<li>');
+            formattedText = parts[0]; // Text before the first list item
+            for (let i = 1; i < parts.length; i++) {
+                if (i === 1) {
+                    formattedText += '<ul><li>' + parts[i];
+                } else {
+                    formattedText += '<li>' + parts[i];
+                }
+            }
+            if (formattedText.includes('<ul>')) {
+                formattedText += '</ul>';
+            }
+        }
     }
+    
     return `<div class="formatted-response">${formattedText}</div>`;
   }
+
 
   // --- Core Logic ---
 
@@ -320,11 +330,11 @@
       const data = await response.json();
 
       thinkingMsg.remove();
-      addMessage("🤖 Atlast Assistant: " + formatBotMessage(data.response), "bot");
+      addMessage("🤖 Siddhi Assistant: " + formatBotMessage(data.response), "bot");
     } catch (err) {
       console.error(err);
       thinkingMsg.remove();
-      addMessage("⚠️ Error: Could not reach Gemini server.", "bot");
+      addMessage("⚠️ Error: Could not reach server.", "bot");
     }
   }
 
