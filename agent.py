@@ -2,7 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
-from langdetect import detect, DetectorFactory
+from langdetect import detect, DetectorFactory, lang_detect_exception
 
 # ✅ Fix deterministic language detection
 DetectorFactory.seed = 0
@@ -38,7 +38,7 @@ class GeminiAssistant:
     # --- Greeting ---
     def greet(self):
         """Provide a friendly multilingual greeting."""
-        # Updated Assistant name to Siddhi
+        # 🎯 Name Reverted to Atlast
         return "👋 Namaste! Welcome to **Atlast Travel Assistant**. Where would you like to go today?"
 
     # --- Translation helper (fallback only) ---
@@ -65,28 +65,37 @@ class GeminiAssistant:
         # 🌐 Detect language dynamically
         try:
             lang = detect(message)
+        except lang_detect_exception.LangDetectException:
+            # Fallback for empty strings or highly ambiguous text
+            lang = "en"
         except Exception:
             lang = "en"
 
-        # ⚡️ FIX FOR SHORT/AMBIGUOUS INPUT MISCLASSIFICATION (like "hi")
-        # If a short English greeting is detected, force 'en' to prevent misclassification (e.g., to 'it').
+        # ⚡️ FIX: Override common misclassifications for short/ambiguous inputs (Language fix preserved)
+        message_lower = message.strip().lower()
+        
+        # 2a. Common English greetings fix (prevents 'it' / Italian)
         english_greetings = ["hi", "hello", "hey", "hlo", "good morning", "good evening", "good afternoon"]
-        if message.strip().lower() in english_greetings:
+        if message_lower in english_greetings:
             lang = "en"
-        # --------------------------------------------------------
-
+        
+        # 2b. Handle misclassified Indian languages (prevents 'ne' / Nepali, 'it' / Italian, etc.)
+        misclassified_indian_codes = ["ne", "it", "tl"] # Nepali, Italian, Tagalog
+        if lang in misclassified_indian_codes and len(message) < 10 and not message_lower.startswith('hi'):
+             lang = "hi"
+        
         print(f"🌍 Detected language: {lang}")
 
         # --- Prepare context and prompt ---
         self.history.append({"role": "user", "content": message})
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
-        # 🎯 Prompt Reinforcement: Instruct the model to STRICTLY adhere to the language code.
+        # 🎯 Prompt Reinforcement: Name Reverted, Stricter Instructions Kept
         prompt = (
             f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in travel across India.\n"
             f"User language code: {lang}. This is the language you **MUST** reply in.\n"
-            f"**STRICTLY** reply in the language with the code '{lang}', as detected from the user's input.\n"
-            f"If the question is about travel, give detailed and polite suggestions.\n"
+            f"**STRICTLY** reply in the language with the code '{lang}'.\n"
+            f"If the question is about a place outside India, politely state that you specialize in India, as you did before. Do this response in the language '{lang}'.\n"
             f"Context:\n{context}\n\nUser: {message}"
         )
 
