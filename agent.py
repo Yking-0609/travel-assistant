@@ -38,8 +38,8 @@ class GeminiAssistant:
     # --- Greeting ---
     def greet(self):
         """Provide a friendly multilingual greeting."""
-        # Renamed assistant in greeting to Siddhi Travel Assistant to match index.html
-        return "👋 Namaste! Welcome to Atlast Travel Assistant. Where would you like to go today?"
+        # Updated Assistant name to Siddhi
+        return "👋 Namaste! Welcome to **Atlast Travel Assistant**. Where would you like to go today?"
 
     # --- Translation helper (fallback only) ---
     def _translate(self, text, target):
@@ -68,7 +68,8 @@ class GeminiAssistant:
         except Exception:
             lang = "en"
 
-        # ⚡️ FIX FOR "HI" MISCLASSIFICATION (New logic added here)
+        # ⚡️ FIX FOR SHORT/AMBIGUOUS INPUT MISCLASSIFICATION (like "hi")
+        # If a short English greeting is detected, force 'en' to prevent misclassification (e.g., to 'it').
         english_greetings = ["hi", "hello", "hey", "hlo", "good morning", "good evening", "good afternoon"]
         if message.strip().lower() in english_greetings:
             lang = "en"
@@ -80,10 +81,11 @@ class GeminiAssistant:
         self.history.append({"role": "user", "content": message})
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
+        # 🎯 Prompt Reinforcement: Instruct the model to STRICTLY adhere to the language code.
         prompt = (
-            f"You are Atlast Travel Assistant — a helpful, polite AI specializing in travel across India.\n"
-            f"User language: {lang}\n"
-            f"Always reply in the same language detected from the user's input.\n"
+            f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in travel across India.\n"
+            f"User language code: {lang}. This is the language you **MUST** reply in.\n"
+            f"**STRICTLY** reply in the language with the code '{lang}', as detected from the user's input.\n"
             f"If the question is about travel, give detailed and polite suggestions.\n"
             f"Context:\n{context}\n\nUser: {message}"
         )
