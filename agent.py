@@ -2,17 +2,22 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
+from langdetect import detect, DetectorFactory
+
+# ✅ Fix deterministic language detection
+DetectorFactory.seed = 0
 
 # --- Load environment variables ---
 load_dotenv()
+
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
     raise ValueError("GOOGLE_API_KEY not found. Set it in your environment variables or .env file.")
 
-# Configure Gemini API
+# --- Configure Gemini API ---
 genai.configure(api_key=API_KEY)
 
-# External translation servers (optional)
+# --- External translation servers (for non-English fallback) ---
 SERVERS = [
     "https://translate.argosopentech.com",
     "https://libretranslate.de",
@@ -21,96 +26,70 @@ SERVERS = [
 
 class GeminiAssistant:
     def __init__(self):
-        # Pick a working Gemini model automatically
+        # ✅ Automatically use the latest working Gemini model
         try:
-            available_models = list(genai.list_models())
-            self.model_name = None
-            for m in available_models:
-                if "generateContent" in getattr(m, "supported_generation_methods", []):
-                    if "gemini" in m.name and "flash" in m.name.lower():
-                        self.model_name = m.name
-                        break
-            if not self.model_name:
-                raise ValueError("No suitable Gemini model supports generateContent.")
-            self.model = genai.GenerativeModel(self.model_name)
-            print(f"Using Gemini model: {self.model_name}")
+            self.model = genai.GenerativeModel("models/gemini-2.5-flash")
+            print("✅ Using model: gemini-2.5-flash")
         except Exception as e:
             raise RuntimeError(f"Error initializing Gemini model: {e}")
 
         self.history = []
 
+    # --- Greeting ---
     def greet(self):
-        return "Namaste! Where do you want to go? / कुठे जायचे?"
+        """Provide a friendly multilingual greeting."""
+        return "👋 Namaste! Welcome to Siddhi Travel Assistant. Where would you like to go today?"
 
-    def _detect(self, text):
-        text_lower = text.lower()
-        if any(k in text_lower for k in ["namaste", "hai", "kahaan"]):
-            return "hi"
-        if any(k in text_lower for k in ["kute", "tumhi", "maharashtra"]):
-            return "mr"
-        if any(k in text_lower for k in ["nandri", "enna", "vandhar"]):
-            return "ta"
-
-        for base in SERVERS:
-            try:
-                r = requests.post(f"{base}/detect", json={"q": text[:100]}, timeout=4)
-                if r.status_code == 200:
-                    detections = r.json()
-                    if detections:
-                        lang = detections[0].get("lang", "en")
-                        if lang.startswith("hi") or "dev" in lang: return "hi"
-                        if lang.startswith("mr"): return "mr"
-                        if lang.startswith("ta"): return "ta"
-                        return "en"
-            except Exception:
-                continue
-        return "en"
-
+    # --- Translation helper (fallback only) ---
     def _translate(self, text, target):
-        source = "en" if target != "en" else self._detect(text)
-        if source == target:
-            return text
         for base in SERVERS:
             try:
                 r = requests.post(
                     f"{base}/translate",
-                    json={"q": text, "source": source, "target": target, "format": "text"},
+                    json={"q": text, "source": "auto", "target": target, "format": "text"},
                     timeout=6,
                 )
                 if r.status_code == 200:
                     return r.json().get("translatedText", text)
             except Exception:
                 continue
-        return text
+        return text  # Fallback if translation fails
 
-    def ask(self, message, target_lang=None):
-        detected = self._detect(message)
-        target_lang = target_lang or detected
-        if target_lang.startswith(("hi", "dev")):
-            target_lang = "hi"
-        elif target_lang.startswith("mr"):
-            target_lang = "mr"
-        elif target_lang.startswith("ta"):
-            target_lang = "ta"
-        else:
-            target_lang = "en"
+    # --- Main chat logic ---
+    def ask(self, message):
+        """Generate a multilingual response based on user input."""
+        if not message.strip():
+            return "Please enter a message."
 
-        msg_en = self._translate(message, "en") if target_lang != "en" else message
-        self.history.append({"role": "user", "content": msg_en})
+        # 🌐 Detect language dynamically
+        try:
+            lang = detect(message)
+        except Exception:
+            lang = "en"
 
-        context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-8:])
+        print(f"🌍 Detected language: {lang}")
+
+        # --- Prepare context and prompt ---
+        self.history.append({"role": "user", "content": message})
+        context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
+
         prompt = (
-            f"You are Siddhi Travel Assistant. Provide helpful, polite travel guidance for India. "
-            f"Reply ONLY in the language '{target_lang.upper()}'. Use bullet points when listing. "
-            f"Conversation Context:\n{context}\nUser Query: {msg_en}"
+            f"You are Siddhi Travel Assistant — a helpful, polite AI specializing in travel across India.\n"
+            f"User language: {lang}\n"
+            f"Always reply in the same language detected from the user's input.\n"
+            f"If the question is about travel, give detailed and polite suggestions.\n"
+            f"Context:\n{context}\n\nUser: {message}"
         )
 
         try:
+            # 🧠 Generate content with Gemini
             response = self.model.generate_content(prompt)
-            reply_text = getattr(response, "text", None) or "Sorry, I couldn't generate a reply."
-            reply_en = self._translate(reply_text, "en") if target_lang != "en" else reply_text
-            self.history.append({"role": "model", "content": reply_en})
-            return reply_text
+            reply = getattr(response, "text", None) or "Sorry, I couldn’t generate a reply."
+
+            # Store only English version internally for context
+            self.history.append({"role": "assistant", "content": reply})
+            return reply.strip()
+
         except Exception as e:
             print(f"Gemini API error: {e}")
-            return "Sorry, there was a problem connecting to Gemini. Please try again."
+            return "⚠️ Sorry, I couldn’t connect to Gemini. Please try again later."

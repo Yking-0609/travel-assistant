@@ -17,18 +17,12 @@ except Exception as e:
 
 db = TravelDatabase()
 
-# --- Routes ---
-
-# Serve the index.html at root
+# --- Serve frontend ---
 @app.route("/")
-def home():
-    try:
-        return send_from_directory(".", "index.html")
-    except Exception as e:
-        print(f"Error serving index.html: {e}")
-        return "Error loading page", 500
+def index():
+    return send_from_directory(".", "index.html")
 
-# API route to get greeting message
+# --- Greeting route ---
 @app.route("/greet")
 def greet():
     try:
@@ -38,8 +32,7 @@ def greet():
         print(f"Greeting error: {e}")
         return jsonify({"message": "Hello! How can I assist you with travel today?"})
 
-
-# Chat route
+# --- Chat route with auto language detection ---
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json() or {}
@@ -49,12 +42,11 @@ def chat():
         return jsonify({"response": "Please type something."}), 400
 
     try:
-        reply = assistant.ask(user_text)
+        reply = assistant.ask(user_text)  # Auto-detect language in agent.py
     except Exception as e:
         print(f"Assistant error: {e}")
         reply = "Sorry, there was an issue generating a response. Please try again later."
 
-    # Save chat history
     try:
         db.save_search(user_text, reply)
     except Exception as e:
@@ -62,7 +54,7 @@ def chat():
 
     return jsonify({"response": reply})
 
-# History route
+# --- History route ---
 @app.route("/history", methods=["GET"])
 def history():
     try:
@@ -72,7 +64,7 @@ def history():
         print(f"History fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- Run the App ---
+# --- Run app ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)
