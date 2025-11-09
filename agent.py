@@ -38,7 +38,7 @@ class GeminiAssistant:
     # --- Greeting ---
     def greet(self):
         """Provide a friendly multilingual greeting."""
-        return "👋 Namaste! Welcome to Siddhi Travel Assistant. Where would you like to go today?"
+        return "👋 Namaste! Welcome to Atlast Travel Assistant. Where would you like to go today?"
 
     # --- Translation helper (fallback only) ---
     def _translate(self, text, target):
@@ -74,7 +74,7 @@ class GeminiAssistant:
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
         prompt = (
-            f"You are Siddhi Travel Assistant — a helpful, polite AI specializing in travel across India.\n"
+            f"You are Atlast Travel Assistant — a helpful, polite AI specializing in travel across India.\n"
             f"User language: {lang}\n"
             f"Always reply in the same language detected from the user's input.\n"
             f"If the question is about travel, give detailed and polite suggestions.\n"

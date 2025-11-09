@@ -239,31 +239,13 @@
   <div class="map-background"></div>
   <div class="chat-container">
     <div class="chat-header">
-      Siddhi Travel Assistant ✈️
+      Atlast Travel Assistant ✈️
     </div>
     
     <div id="messages">
       <!-- Messages will appear here -->
     </div>
     
-    <div class="chat-input-area">
-      <!-- Language selector is kept for visual compatibility but is now ignored by JS -->
-      <select id="language">
-        <option value="en">English (Auto)</option>
-        <option value="hi">Hindi (Auto)</option>
-        <option value="mr">Marathi (Auto)</option>
-        <option value="ta">Tamil (Auto)</option>
-      </select>
-      
-      <input type="text" id="userInput" placeholder="Ask about travel to India..." autofocus>
-      <button class="chat-button" onclick="sendMessage()">
-        <i class="fas fa-paper-plane"></i>
-      </button>
-    </div>
-    
-    <div class="chat-footer text-center text-xs text-gray-500 p-2">
-      Powered by Google Gemini 1.5 Flash
-    </div>
   </div>
 
   <script>
@@ -338,7 +320,7 @@
       const data = await response.json();
 
       thinkingMsg.remove();
-      addMessage("🤖 Siddhi Assistant: " + formatBotMessage(data.response), "bot");
+      addMessage("🤖 Atlast Assistant: " + formatBotMessage(data.response), "bot");
     } catch (err) {
       console.error(err);
       thinkingMsg.remove();
