@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Siddhi Tours And Travel Assistant</title>
+  <title>Atlast Travel Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     /* 🌈 Vibrant Background with Travel Icons */
@@ -182,6 +182,19 @@
       box-shadow: 0 2px #cfa800;
     }
 
+    /* NEW STYLES for Voice Button */
+    .mic-button {
+      background: #00CC99; /* Green/Mint */
+      color: white;
+      box-shadow: 0 4px #00a07a;
+    }
+    .mic-button:hover {
+      background: #00a07a;
+    }
+    .mic-button:active {
+      box-shadow: 0 2px #008767;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .chat-container {
@@ -227,7 +240,10 @@
       </div>
     
     <div class="chat-input-area">
-      <input type="text" id="userInput" placeholder="Ask about travel to India..." autofocus>
+      <input type="text" id="userInput" placeholder="Ask about travel..." autofocus>
+      <button class="chat-button mic-button" onclick="startVoiceInput()" id="voiceButton">
+        <i class="fas fa-microphone"></i>
+      </button>
       <button class="chat-button" onclick="sendMessage()">
         <i class="fas fa-paper-plane"></i>
       </button>
@@ -264,17 +280,15 @@
     // Correctly handle list items by ensuring they are wrapped in <ul>
     let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
     
-    // Check if any list items were created
+    // Simple heuristic to wrap list items if they appear
     if (formattedText.includes('<li>')) {
-        // Simple heuristic to wrap list items if they appear at the start of the text
-        // (This is a basic check and may not handle complex formatting perfectly)
         formattedText = formattedText.trim();
         if (formattedText.startsWith('<li>')) {
             formattedText = '<ul>' + formattedText + '</ul>';
         } else {
-            // Find the first <li> and wrap subsequent list items
+            // Find a way to wrap the list section if it's not the first element
             const parts = formattedText.split('<li>');
-            formattedText = parts[0]; // Text before the first list item
+            formattedText = parts[0]; 
             for (let i = 1; i < parts.length; i++) {
                 if (i === 1) {
                     formattedText += '<ul><li>' + parts[i];
@@ -292,26 +306,114 @@
   }
 
 
+  // --- VOICE FUNCTIONALITY (STT & TTS) ---
+
+  /**
+   * TTS Helper: Reads the response text aloud using the browser's native API.
+   * This handles multiple languages automatically based on the text.
+   */
+  function speakResponse(text) {
+    if ('speechSynthesis' in window) {
+        // Stop any previous speech
+        window.speechSynthesis.cancel(); 
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.05; // Slightly faster for natural flow
+        // The browser's engine automatically selects the appropriate language/voice 
+        // based on the content of the utterance object.
+        window.speechSynthesis.speak(utterance);
+    } else {
+        console.warn("Text-to-speech not supported in this browser.");
+    }
+  }
+
+  /**
+   * STT Function: Captures user voice and converts to text using the browser's API.
+   * NOTE: This requires the live site to be on HTTPS!
+   */
+  function startVoiceInput() {
+    // Check for browser support (prefixed version for Chrome is common)
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("Speech recognition is not fully supported or requires a secure connection (HTTPS). Please ensure your live site uses HTTPS.");
+      return;
+    }
+    
+    // Use window.webkitSpeechRecognition for wider compatibility
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false; // Stop after a single phrase
+    recognition.interimResults = false;
+    recognition.lang = 'auto'; // Auto-detect language
+
+    const inputField = document.getElementById("userInput");
+    const voiceButton = document.getElementById("voiceButton");
+    
+    // --- UI state changes while listening (User Feedback) ---
+    voiceButton.innerHTML = '<i class="fas fa-dot-circle fa-beat"></i>';
+    voiceButton.style.backgroundColor = 'red';
+    voiceButton.style.boxShadow = '0 4px #cc0000';
+    inputField.placeholder = "Listening... Speak now.";
+    // Stop any ongoing TTS when user starts speaking
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+
+
+    recognition.onresult = function(event) {
+        // Get the final transcription
+        const speechToText = event.results[0][0].transcript;
+        inputField.value = speechToText;
+        
+        // Send the transcribed text
+        sendMessage(); 
+    };
+
+    recognition.onerror = function(event) {
+        console.error('Speech recognition error:', event.error);
+        // Reset UI state and show error
+        alert("Microphone access failed. Ensure the site is HTTPS and you have granted permission.");
+    };
+    
+    recognition.onend = function() {
+        // Always reset UI state when recognition session ends
+        voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
+        voiceButton.style.backgroundColor = '#00CC99';
+        voiceButton.style.boxShadow = '0 4px #00a07a';
+        if(inputField.value === "") { // Only reset placeholder if no text was captured
+            inputField.placeholder = "Ask about travel to India...";
+        }
+    };
+
+    recognition.start();
+  }
+
+
   // --- Core Logic ---
 
   // Greeting: fetch welcome message from Flask
   async function loadGreeting() {
     try {
-      const response = await fetch(`${API_BASE}/greet`); // Updated to /greet
+      const response = await fetch(`${API_BASE}/greet`); 
       if (!response.ok) throw new Error("Server response not OK");
       const data = await response.json();
-      addMessage(`🌍 Atlast Assistant: ${data.message}`, "bot");
+      const welcomeText = `${data.message}`; // Use raw message for better TTS
+      addMessage("🌍 Atlast Assistant: " + welcomeText, "bot");
+      speakResponse(welcomeText); // Speak the greeting
     } catch (err) {
       console.error(err);
       addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
     }
   }
 
-  // Send user message
+  // Send user message (modified to include TTS)
   async function sendMessage() {
     const input = document.getElementById("userInput");
     const userText = input.value.trim();
     if (!userText) return;
+
+    // Stop any ongoing speech when user sends a new message
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
 
     addMessage(userText, "user");
     input.value = "";
@@ -328,13 +430,18 @@
 
       if (!response.ok) throw new Error("Server response not OK");
       const data = await response.json();
+      const botResponseText = data.response;
 
       thinkingMsg.remove();
-      addMessage("🤖 Atlast Assistant: " + formatBotMessage(data.response), "bot");
+      addMessage("🤖 Atlast Assistant: " + formatBotMessage(botResponseText), "bot");
+      
+      // *** TTS Implementation: Speak the response after it's displayed ***
+      speakResponse(botResponseText);
+
     } catch (err) {
       console.error(err);
       thinkingMsg.remove();
-      addMessage("⚠️ Error: Could not reach server.", "bot");
+      addMessage("⚠️ Error: Could not reach server or generate response.", "bot");
     }
   }
 
