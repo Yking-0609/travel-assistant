@@ -6,6 +6,7 @@
   <title>Atlast Travel Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    /* ... (CSS styles remain the same) ... */
     /* 🌈 Vibrant Background with Travel Icons */
     body { 
       font-family: 'Poppins', Arial, sans-serif; 
@@ -252,20 +253,18 @@
 
   <script>
   // --- Configuration and Helper Functions ---
-  const API_BASE = "";  // empty string works for same origin (Render or local)
+  const API_BASE = ""; 
 
-  // Helper to add messages to chat and scroll to bottom
   function addMessage(text, sender, className = "") {
     const chatbox = document.getElementById("messages");
     const msg = document.createElement("div");
     msg.className = `message ${sender} ${className}`;
-    msg.innerHTML = text; // Use innerHTML to handle HTML formatting
+    msg.innerHTML = text; 
     chatbox.appendChild(msg);
-    chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
+    chatbox.scrollTop = chatbox.scrollHeight; 
     return msg;
   }
 
-  // Creates the thinking state message HTML
   function createThinkingMessage() {
     return `
       <div class="flex items-center space-x-2">
@@ -275,18 +274,14 @@
     `;
   }
 
-  // Formats the bot message (for bullet points)
   function formatBotMessage(text) {
-    // Correctly handle list items by ensuring they are wrapped in <ul>
     let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
     
-    // Simple heuristic to wrap list items if they appear
     if (formattedText.includes('<li>')) {
         formattedText = formattedText.trim();
         if (formattedText.startsWith('<li>')) {
             formattedText = '<ul>' + formattedText + '</ul>';
         } else {
-            // Find a way to wrap the list section if it's not the first element
             const parts = formattedText.split('<li>');
             formattedText = parts[0]; 
             for (let i = 1; i < parts.length; i++) {
@@ -309,77 +304,83 @@
   // --- VOICE FUNCTIONALITY (STT & TTS) ---
 
   /**
-   * TTS Helper: Reads the response text aloud using the browser's native API.
-   * This handles multiple languages automatically based on the text.
+   * TTS Helper: Reads the response text aloud.
    */
   function speakResponse(text) {
     if ('speechSynthesis' in window) {
-        // Stop any previous speech
         window.speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.05; // Slightly faster for natural flow
-        // The browser's engine automatically selects the appropriate language/voice 
-        // based on the content of the utterance object.
+        utterance.rate = 1.05; 
         window.speechSynthesis.speak(utterance);
     } else {
-        console.warn("Text-to-speech not supported in this browser.");
+        console.warn("Text-to-speech not supported.");
     }
   }
 
   /**
-   * STT Function: Captures user voice and converts to text using the browser's API.
-   * NOTE: This requires the live site to be on HTTPS!
+   * STT Function: Captures user voice.
+   * Includes better error feedback.
    */
   function startVoiceInput() {
-    // Check for browser support (prefixed version for Chrome is common)
+    // Check for browser support
     if (!('webkitSpeechRecognition' in window)) {
-      alert("Speech recognition is not fully supported or requires a secure connection (HTTPS). Please ensure your live site uses HTTPS.");
+      alert("Speech recognition is not fully supported in this browser. Please use Chrome/Edge over HTTPS.");
       return;
     }
     
-    // Use window.webkitSpeechRecognition for wider compatibility
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false; // Stop after a single phrase
+    recognition.continuous = false; 
     recognition.interimResults = false;
-    recognition.lang = 'auto'; // Auto-detect language
+    recognition.lang = 'auto'; 
 
     const inputField = document.getElementById("userInput");
     const voiceButton = document.getElementById("voiceButton");
     
-    // --- UI state changes while listening (User Feedback) ---
+    // --- UI State Changes ---
     voiceButton.innerHTML = '<i class="fas fa-dot-circle fa-beat"></i>';
     voiceButton.style.backgroundColor = 'red';
     voiceButton.style.boxShadow = '0 4px #cc0000';
-    inputField.placeholder = "Listening... Speak now.";
-    // Stop any ongoing TTS when user starts speaking
+    inputField.placeholder = "LISTENING... Speak clearly now.";
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
     }
 
 
     recognition.onresult = function(event) {
-        // Get the final transcription
         const speechToText = event.results[0][0].transcript;
         inputField.value = speechToText;
-        
-        // Send the transcribed text
+        // The recognition is successful, proceed to send message.
         sendMessage(); 
     };
 
     recognition.onerror = function(event) {
         console.error('Speech recognition error:', event.error);
-        // Reset UI state and show error
-        alert("Microphone access failed. Ensure the site is HTTPS and you have granted permission.");
+        // Display a more specific error message based on the event code.
+        let errorMsg = "Microphone access failed. Ensure permission is granted.";
+        if (event.error === 'not-allowed') {
+            errorMsg = "🎤 Permission Denied. Check the lock icon (🔒) in the address bar to allow microphone access.";
+        } else if (event.error === 'no-speech') {
+            errorMsg = "🚫 No speech detected. Please try again and speak louder.";
+        } else if (event.error === 'audio-capture') {
+            errorMsg = "⚠️ Audio device error. Check your microphone connection and drivers.";
+        }
+
+        // Show the error briefly in the input box
+        inputField.value = errorMsg;
+        setTimeout(() => { 
+            inputField.value = "";
+            inputField.placeholder = "Ask about travel...";
+        }, 3000);
     };
     
     recognition.onend = function() {
-        // Always reset UI state when recognition session ends
+        // Reset button and placeholder
         voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
         voiceButton.style.backgroundColor = '#00CC99';
         voiceButton.style.boxShadow = '0 4px #00a07a';
-        if(inputField.value === "") { // Only reset placeholder if no text was captured
-            inputField.placeholder = "Ask about travel to India...";
+        if(inputField.value === "" || inputField.value.startsWith("🚫") || inputField.value.startsWith("🎤")) { 
+            inputField.placeholder = "Ask about travel...";
         }
     };
 
@@ -395,7 +396,7 @@
       const response = await fetch(`${API_BASE}/greet`); 
       if (!response.ok) throw new Error("Server response not OK");
       const data = await response.json();
-      const welcomeText = `${data.message}`; // Use raw message for better TTS
+      const welcomeText = `${data.message}`; 
       addMessage("🌍 Atlast Assistant: " + welcomeText, "bot");
       speakResponse(welcomeText); // Speak the greeting
     } catch (err) {
@@ -404,13 +405,13 @@
     }
   }
 
-  // Send user message (modified to include TTS)
+  // Send user message (Modified for TTS)
   async function sendMessage() {
     const input = document.getElementById("userInput");
     const userText = input.value.trim();
-    if (!userText) return;
+    if (!userText || userText.startsWith("🎤") || userText.startsWith("🚫")) return; // Prevent sending error messages
 
-    // Stop any ongoing speech when user sends a new message
+    // Stop ongoing speech
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
     }
