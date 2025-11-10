@@ -62,23 +62,33 @@ class GeminiAssistant:
             return "Please enter a message."
 
         # 🌐 Detect language dynamically
-        try:
-            lang = detect(message)
-        except lang_detect_exception.LangDetectException:
-            lang = "en"
-        except Exception:
-            lang = "en"
-
-        # ⚡️ Language Fixes (Preventing Italian/Nepali misclassification)
         message_lower = message.strip().lower()
+        lang = "en" # Default to English
         
-        # 2a. Common English greetings fix (prevents 'it' / Italian)
+        try:
+            detected_lang = detect(message)
+        except lang_detect_exception.LangDetectException:
+            detected_lang = "en"
+        except Exception:
+            detected_lang = "en"
+            
+        lang = detected_lang
+
+        # ⚡️ FIX 1: Common English greetings fix (prevents 'it' / Italian)
         english_greetings = ["hi", "hello", "hey", "hlo", "good morning", "good evening", "good afternoon"]
         if message_lower in english_greetings:
             lang = "en"
         
-        # 2b. Handle misclassified Indian languages (prevents 'ne' / Nepali, 'it' / Italian, etc.)
-        misclassified_indian_codes = ["ne", "it", "tl"] # Nepali, Italian, Tagalog
+        # ⚡️ FIX 2 (NEW): Short, Ambiguous Input Fix (Prevents Lithuanian, Nepali, Italian for place names)
+        # If the message is short (e.g., one or two words, less than 15 chars) AND 
+        # the detected language is one of these often-misclassified codes, force 'en' as a safe default.
+        misclassified_codes = ["lt", "ne", "it", "tl"] # Lithuanian, Nepali, Italian, Tagalog
+        if len(message) < 15 and lang in misclassified_codes and all(c.isalpha() or c.isspace() for c in message):
+             lang = "en"
+        # ----------------------------------------------------------------------------------------
+
+        # ⚡️ FIX 3: Handle misclassified Indian languages (prevents incorrect Indian languages if using Devanagari)
+        misclassified_indian_codes = ["ne", "it", "tl"] 
         if lang in misclassified_indian_codes and len(message) < 10 and not message_lower.startswith('hi'):
              lang = "hi"
         
@@ -88,7 +98,7 @@ class GeminiAssistant:
         self.history.append({"role": "user", "content": message})
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
-        # 🎯 FIX 1: Removed India-only specialization, now globally focused
+        # 🎯 Global Travel Prompt
         prompt = (
             f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in **global travel**.\n"
             f"User language code: {lang}. This is the language you **MUST** reply in.\n"
