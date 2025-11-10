@@ -212,9 +212,6 @@
         flex-direction: row; 
         gap: 0.5rem;
       }
-      #userInput {
-        flex-grow: 1;
-      }
       .chat-button {
         width: 44px;
         height: 44px;
@@ -257,7 +254,7 @@
   <script>
   // --- Configuration and Helper Functions ---
   const API_BASE = ""; 
-  let isSpeaking = false; // NEW: Global state to track if TTS is active
+  let isSpeaking = false; // Global state to track if TTS is active
 
   function addMessage(text, sender, className = "") {
     const chatbox = document.getElementById("messages");
@@ -395,13 +392,18 @@
     // --- UI State Changes ---
     updateVoiceButton('listening');
     inputField.placeholder = "LISTENING... Speak clearly now.";
-    stopSpeech(); // Stop speech if user clicks mic while assistant is talking
+    stopSpeech(); // Ensure the assistant is quiet when the user starts speaking
 
 
     recognition.onresult = function(event) {
         const speechToText = event.results[0][0].transcript;
         inputField.value = speechToText;
-        sendMessage(); 
+        
+        // CRITICAL FIX: Add a small delay (50ms) to ensure speech recognition 
+        // fully shuts down before Text-to-Speech starts.
+        setTimeout(() => {
+            sendMessage(); 
+        }, 50); 
     };
 
     recognition.onerror = function(event) {
@@ -475,7 +477,6 @@
     const input = document.getElementById("userInput");
     const userText = input.value.trim();
     if (!userText || userText.startsWith("🎤") || userText.startsWith("🚫")) {
-      // Stop speech and return if user sends an error message or blank text
       stopSpeech(); 
       return; 
     }
@@ -510,7 +511,6 @@
       console.error(err);
       thinkingMsg.remove();
       addMessage("⚠️ Error: Could not reach server or generate response.", "bot");
-      // Ensure button resets if there's an error and speech couldn't start
       updateVoiceButton('mic'); 
     }
   }
