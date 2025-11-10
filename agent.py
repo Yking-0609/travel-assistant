@@ -2,9 +2,9 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
-from langdetect import detect, DetectorFactory, lang_detect_exception # <-- Added lang_detect_exception
+from langdetect import detect, DetectorFactory, lang_detect_exception 
 
-# ✅ Fix deterministic language detection
+# Fix deterministic language detection
 DetectorFactory.seed = 0
 
 # --- Load environment variables ---
@@ -26,7 +26,7 @@ SERVERS = [
 
 class GeminiAssistant:
     def __init__(self):
-        # ✅ Automatically use the latest working Gemini model
+        # Automatically use the latest working Gemini model
         try:
             self.model = genai.GenerativeModel("models/gemini-2.5-flash")
             print("✅ Using model: gemini-2.5-flash")
@@ -38,7 +38,6 @@ class GeminiAssistant:
     # --- Greeting ---
     def greet(self):
         """Provide a friendly multilingual greeting."""
-        # ✅ Updated greeting to reflect global scope
         return "👋 Namaste! Welcome to **Atlast Travel Assistant**. Where would you like to go today? (We cover destinations worldwide!)"
 
     # --- Translation helper (fallback only) ---
@@ -64,36 +63,53 @@ class GeminiAssistant:
 
         # 🌐 Detect language dynamically
         message_lower = message.strip().lower()
-        lang = "en" # Default to English
+        lang = "en" # Start with English default
         
         try:
             detected_lang = detect(message)
         except lang_detect_exception.LangDetectException:
-            detected_lang = "en"
+            detected_lang = "en" 
         except Exception:
             detected_lang = "en"
             
         lang = detected_lang
 
-        # ⚡️ FIX 1: Common English greetings fix (prevents 'it' / Italian)
+        # 🎯 Step 1: Manual Overrides for Short, Ambiguous Inputs
+        
+        # 1a. Common English Greetings Fix (prevents 'it' / Italian)
         english_greetings = ["hi", "hello", "hey", "hlo", "good morning", "good evening", "good afternoon"]
         if message_lower in english_greetings:
             lang = "en"
         
-        # ⚡️ FIX 2: Short, Ambiguous Input Fix (Prevents Lithuanian, Nepali, Italian for place names like "Nauru")
-        misclassified_codes = ["lt", "ne", "it", "tl"] # Lithuanian, Nepali, Italian, Tagalog
-        # Check if the message is short (e.g., one or two words) AND is classified as a problem language
-        if len(message) < 15 and lang in misclassified_codes and all(c.isalpha() or c.isspace() for c in message):
+        # 1b. Short International Place Name Fix (Prevents Lithuanian/Nepali/Italian for names like "Nauru")
+        misclassified_foreign_codes = ["lt", "ne", "it", "tl", "sk", "sq", "ro"] 
+        if len(message) < 15 and lang in misclassified_foreign_codes and all(c.isalpha() or c.isspace() for c in message):
              lang = "en"
         
-        # ⚡️ FIX 3: Handle misclassified Indian languages (forces 'hi' instead of 'ne' for Romanized input like 'japan')
-        misclassified_indian_codes = ["ne", "it", "tl"] 
-        if lang in misclassified_indian_codes and len(message) < 10 and not message_lower.startswith('hi'):
+        # 1c. Indian Language Ambiguity Fix (Forces 'hi' for short, non-English Indian text if classified as Nepali)
+        if lang == "ne" and len(message) < 10 and not all(c in 'abcdefghijklmnopqrstuvwxyz ' for c in message_lower):
              lang = "hi"
-        
-        # NEW LOGIC: Override to Marathi if explicitly requested within an English sentence
-        if "marathi" in message_lower and lang == "en":
-             lang = "mr"
+             
+        # 1d. Explicit Language Request Override (Handles cases like: "Manali in Tamil?")
+        # This is the fix for your specific question.
+        if "marathi" in message_lower:
+            lang = "mr"
+        elif "hindi" in message_lower:
+            lang = "hi"
+        elif "tamil" in message_lower:
+            lang = "ta"
+        elif "telugu" in message_lower:
+            lang = "te"
+        elif "bengali" in message_lower:
+            lang = "bn"
+        elif "kannada" in message_lower:
+            lang = "kn"
+        elif "malayalam" in message_lower:
+            lang = "ml"
+        elif "gujarati" in message_lower:
+            lang = "gu"
+        elif "english" in message_lower:
+            lang = "en"
         
         print(f"🌍 Detected language: {lang}")
 
@@ -101,7 +117,7 @@ class GeminiAssistant:
         self.history.append({"role": "user", "content": message})
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
-        # 🎯 CRITICAL FIX: Global Specialization and STRICT language forcing
+        # 🎯 Step 2: STRICT Prompt Instruction for Global Travel
         prompt = (
             f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in **global travel**.\n"
             f"User language code: {lang}. This is the language you **MUST** reply in.\n"
