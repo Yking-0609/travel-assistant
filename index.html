@@ -6,7 +6,6 @@
   <title>Atlast Travel Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    /* ... (CSS styles remain the same) ... */
     /* 🌈 Vibrant Background with Travel Icons */
     body { 
       font-family: 'Poppins', Arial, sans-serif; 
@@ -188,6 +187,9 @@
       background: #00CC99; /* Green/Mint */
       color: white;
       box-shadow: 0 4px #00a07a;
+      width: 44px; /* Fixed width for consistent look */
+      height: 44px; /* Fixed height for consistent look */
+      padding: 0;
     }
     .mic-button:hover {
       background: #00a07a;
@@ -207,14 +209,15 @@
         border-radius: 0;
       }
       .chat-input-area {
-        flex-direction: row; /* Keep input and button side-by-side */
+        flex-direction: row; 
         gap: 0.5rem;
       }
       #userInput {
         flex-grow: 1;
       }
       .chat-button {
-        width: auto;
+        width: 44px;
+        height: 44px;
       }
     }
 
@@ -242,8 +245,8 @@
     
     <div class="chat-input-area">
       <input type="text" id="userInput" placeholder="Ask about travel..." autofocus>
-      <button class="chat-button mic-button" onclick="startVoiceInput()" id="voiceButton">
-        <i class="fas fa-microphone"></i>
+      <button class="chat-button mic-button" onclick="handleVoiceAction()" id="voiceButton">
+        <i id="voiceIcon" class="fas fa-microphone"></i>
       </button>
       <button class="chat-button" onclick="sendMessage()">
         <i class="fas fa-paper-plane"></i>
@@ -254,6 +257,7 @@
   <script>
   // --- Configuration and Helper Functions ---
   const API_BASE = ""; 
+  let isSpeaking = false; // NEW: Global state to track if TTS is active
 
   function addMessage(text, sender, className = "") {
     const chatbox = document.getElementById("messages");
@@ -275,6 +279,7 @@
   }
 
   function formatBotMessage(text) {
+    // Basic formatting for bullet points and lists
     let formattedText = text.replace(/^\* (.*)/gm, '<li>$1</li>');
     
     if (formattedText.includes('<li>')) {
@@ -304,25 +309,76 @@
   // --- VOICE FUNCTIONALITY (STT & TTS) ---
 
   /**
-   * TTS Helper: Reads the response text aloud.
+   * Updates the microphone/stop button's appearance based on state.
+   * @param {string} state - 'mic', 'stop', or 'listening'
    */
-  function speakResponse(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.05; 
-        window.speechSynthesis.speak(utterance);
-    } else {
-        console.warn("Text-to-speech not supported.");
-    }
+  function updateVoiceButton(state) {
+      const voiceButton = document.getElementById("voiceButton");
+      const voiceIcon = document.getElementById("voiceIcon");
+      
+      if (!voiceIcon) return; // Exit if elements aren't ready
+
+      if (state === 'stop') {
+          voiceIcon.className = 'fas fa-stop';
+          voiceButton.style.backgroundColor = '#cc0000'; // Red for Stop
+          voiceButton.style.boxShadow = '0 4px #990000';
+      } else if (state === 'mic') {
+          voiceIcon.className = 'fas fa-microphone';
+          voiceButton.style.backgroundColor = '#00CC99'; // Green/Mint for Mic
+          voiceButton.style.boxShadow = '0 4px #00a07a';
+      } else if (state === 'listening') {
+          voiceIcon.className = 'fas fa-dot-circle fa-beat'; // Pulsing icon
+          voiceButton.style.backgroundColor = 'orange'; // Orange for Listening
+          voiceButton.style.boxShadow = '0 4px #cc8400';
+      }
   }
 
   /**
-   * STT Function: Captures user voice.
-   * Includes better error feedback.
+   * Function to stop any ongoing speech immediately.
    */
-  function startVoiceInput() {
-    // Check for browser support
+  function stopSpeech() {
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      updateVoiceButton('mic');
+    }
+  }
+
+
+  /**
+   * TTS Helper: Reads the response text aloud and updates the speaking state.
+   */
+  function speakResponse(text) {
+    if (!('speechSynthesis' in window)) {
+      console.warn("Text-to-speech not supported.");
+      return;
+    }
+    
+    stopSpeech(); // Ensure previous speech is cancelled
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.05; 
+    
+    // Set state and update UI when speech starts
+    utterance.onstart = () => {
+      isSpeaking = true;
+      updateVoiceButton('stop');
+    };
+    
+    // Reset state and update UI when speech ends naturally
+    utterance.onend = () => {
+      isSpeaking = false;
+      updateVoiceButton('mic');
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+
+  /**
+   * STT Function: Captures user voice (renamed to startListening).
+   */
+  function startListening() {
     if (!('webkitSpeechRecognition' in window)) {
       alert("Speech recognition is not fully supported in this browser. Please use Chrome/Edge over HTTPS.");
       return;
@@ -335,56 +391,65 @@
     recognition.lang = 'auto'; 
 
     const inputField = document.getElementById("userInput");
-    const voiceButton = document.getElementById("voiceButton");
     
     // --- UI State Changes ---
-    voiceButton.innerHTML = '<i class="fas fa-dot-circle fa-beat"></i>';
-    voiceButton.style.backgroundColor = 'red';
-    voiceButton.style.boxShadow = '0 4px #cc0000';
+    updateVoiceButton('listening');
     inputField.placeholder = "LISTENING... Speak clearly now.";
-    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-    }
+    stopSpeech(); // Stop speech if user clicks mic while assistant is talking
 
 
     recognition.onresult = function(event) {
         const speechToText = event.results[0][0].transcript;
         inputField.value = speechToText;
-        // The recognition is successful, proceed to send message.
         sendMessage(); 
     };
 
     recognition.onerror = function(event) {
         console.error('Speech recognition error:', event.error);
-        // Display a more specific error message based on the event code.
         let errorMsg = "Microphone access failed. Ensure permission is granted.";
         if (event.error === 'not-allowed') {
-            errorMsg = "🎤 Permission Denied. Check the lock icon (🔒) in the address bar to allow microphone access.";
+            errorMsg = "🎤 Permission Denied. Check the lock icon (🔒) to allow microphone access.";
         } else if (event.error === 'no-speech') {
-            errorMsg = "🚫 No speech detected. Please try again and speak louder.";
+            errorMsg = "🚫 No speech detected.";
         } else if (event.error === 'audio-capture') {
-            errorMsg = "⚠️ Audio device error. Check your microphone connection and drivers.";
+            errorMsg = "⚠️ Audio device error.";
         }
 
-        // Show the error briefly in the input box
         inputField.value = errorMsg;
         setTimeout(() => { 
-            inputField.value = "";
-            inputField.placeholder = "Ask about travel...";
+            if(inputField.value === errorMsg) {
+               inputField.value = "";
+               inputField.placeholder = "Ask about travel...";
+            }
         }, 3000);
+        updateVoiceButton('mic'); // Reset button on error
     };
     
     recognition.onend = function() {
-        // Reset button and placeholder
-        voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
-        voiceButton.style.backgroundColor = '#00CC99';
-        voiceButton.style.boxShadow = '0 4px #00a07a';
-        if(inputField.value === "" || inputField.value.startsWith("🚫") || inputField.value.startsWith("🎤")) { 
-            inputField.placeholder = "Ask about travel...";
+        // Only reset button/placeholder if not currently speaking
+        if (!isSpeaking) {
+            updateVoiceButton('mic'); 
+            if(inputField.value === "" || inputField.value.startsWith("🚫") || inputField.value.startsWith("🎤")) { 
+               inputField.placeholder = "Ask about travel...";
+            }
         }
     };
 
     recognition.start();
+  }
+
+
+  /**
+   * Handles the click action on the main voice button (Start Mic or Stop TTS).
+   */
+  function handleVoiceAction() {
+    if (isSpeaking) {
+      // If speaking, stop the speech
+      stopSpeech();
+    } else {
+      // If not speaking, start listening
+      startListening();
+    }
   }
 
 
@@ -405,16 +470,18 @@
     }
   }
 
-  // Send user message (Modified for TTS)
+  // Send user message
   async function sendMessage() {
     const input = document.getElementById("userInput");
     const userText = input.value.trim();
-    if (!userText || userText.startsWith("🎤") || userText.startsWith("🚫")) return; // Prevent sending error messages
-
-    // Stop ongoing speech
-    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
+    if (!userText || userText.startsWith("🎤") || userText.startsWith("🚫")) {
+      // Stop speech and return if user sends an error message or blank text
+      stopSpeech(); 
+      return; 
     }
+
+    // Stop ongoing speech when user sends a new message (text or voice)
+    stopSpeech(); 
 
     addMessage(userText, "user");
     input.value = "";
@@ -443,6 +510,8 @@
       console.error(err);
       thinkingMsg.remove();
       addMessage("⚠️ Error: Could not reach server or generate response.", "bot");
+      // Ensure button resets if there's an error and speech couldn't start
+      updateVoiceButton('mic'); 
     }
   }
 
