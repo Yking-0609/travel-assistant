@@ -34,7 +34,7 @@ class GeminiAssistant:
         self.history = []
 
     def greet(self):
-        """Friendly English greeting."""
+        """Friendly multilingual greeting."""
         return "👋 Namaste! Welcome to **Atlast Travel Assistant**. Where would you like to go today? (We cover destinations worldwide!)"
 
     def _translate(self, text, target):
@@ -53,92 +53,60 @@ class GeminiAssistant:
         return text
 
     def ask(self, message):
-        """Main logic — detects if input is a place, and replies in English unless user requests otherwise."""
+        """Generate a multilingual response based on user input, strictly adhering to the input language."""
         if not message.strip():
             return "Please enter a message."
 
-        message_lower = message.strip().lower()
-        lang = "en"
-
-        # --- Step 1: Basic detection ---
+        # --- Step 1: Basic language detection ---
+        lang = "en" # Default to English
+        
         try:
+            # Use 'detect' to get the single best prediction
             detected_lang = detect(message)
+            lang = detected_lang
         except lang_detect_exception.LangDetectException:
-            detected_lang = "en"
+            # If detection fails (e.g., short or ambiguous text), keep default 'en'.
+            lang = "en" 
         except Exception:
-            detected_lang = "en"
+            lang = "en"
+        
+        # 🎯 RULE: HARD FILTER for Somali (so) on short, ambiguous inputs
+        # This prevents 'mahad' from triggering Somali while maintaining multilingual support.
+        if lang == "so" and len(message.split()) <= 2:
+            print("Language set to 'so' for short input. Overriding to 'en'.")
+            lang = "en"
+            
+        print(f"🌍 Final reply language selected: {lang}")
 
-        # --- Step 2: Handle explicit language requests ---
-        if "in hindi" in message_lower:
-            detected_lang = "hi"
-        elif "in marathi" in message_lower:
-            detected_lang = "mr"
-        elif "in tamil" in message_lower:
-            detected_lang = "ta"
-        elif "in telugu" in message_lower:
-            detected_lang = "te"
-        elif "in bengali" in message_lower:
-            detected_lang = "bn"
-        elif "in kannada" in message_lower:
-            detected_lang = "kn"
-        elif "in malayalam" in message_lower:
-            detected_lang = "ml"
-        elif "in gujarati" in message_lower:
-            detected_lang = "gu"
-        elif "in english" in message_lower:
-            detected_lang = "en"
-
-        # --- Step 3: Override logic for short words like "Mahad" or "Nauru" ---
-        if len(message.split()) == 1 and message.isalpha():
-            # Force English and treat it as a destination
-            detected_lang = "en"
-            is_destination = True
-        else:
-            is_destination = False
-
-        # --- Step 4: Somali or misclassified short input fix ---
-        if detected_lang == "so" and len(message.split()) <= 2:
-            detected_lang = "en"
-
-        # --- Step 5: Override English for ASCII-only text (prevents false positives) ---
-        if detected_lang != "en" and all(c.isascii() for c in message):
-            detected_lang = "en"
-
-        lang = detected_lang
-        print(f"🌍 Final language selected: {lang} | Destination mode: {is_destination}")
-
-        # --- Prepare prompt ---
+        # --- Prepare context and prompt ---
         self.history.append({"role": "user", "content": message})
         context = "\n".join(f"{h['role']}: {h['content']}" for h in self.history[-6:])
 
-        if is_destination:
-            # Treat single-word input as place
-            prompt = (
-                f"You are **Atlast Travel Assistant**, an expert global travel guide.\n"
-                f"The user provided the word '{message}'. Assume this refers to a **travel destination**, "
-                f"not a person's name or greeting.\n"
-                f"Describe it in a friendly, informative English tone.\n"
-                f"Include location details, key attractions, history, culture, and travel tips.\n"
-                f"Start by clarifying politely that you assume it's a place, e.g., "
-                f"'I assume you meant the place {message} — here’s what you can explore there.'\n"
-                f"Context:\n{context}\n\nUser: {message}"
-            )
-        else:
-            # Normal conversation
-            prompt = (
-                f"You are **Atlast Travel Assistant**, a helpful AI travel expert.\n"
-                f"Always reply in **English** unless the user explicitly asks for another language.\n"
-                f"User language code: {lang}\n"
-                f"Context:\n{context}\n\nUser: {message}"
-            )
+        # 🎯 Prompt Instruction for Global Travel and Strict Multilingual Reply
+        prompt = (
+            f"You are **Atlast Travel Assistant** — a helpful, polite AI specializing in **global travel**.\n"
+            f"The user's input language code is '{lang}'. You **MUST** reply in this language.\n"
+            f"**STRICTLY** reply in the language with the code '{lang}'.\n"
+            f"If the question is about travel, give detailed and polite suggestions for destinations worldwide.\n"
+            f"Context:\n{context}\n\nUser: {message}"
+        )
 
-        # --- Step 6: Generate response ---
+        # --- Step 2: Generate response ---
         try:
             response = self.model.generate_content(prompt)
             reply = getattr(response, "text", None) or "Sorry, I couldn’t generate a reply."
+
             self.history.append({"role": "assistant", "content": reply})
             return reply.strip()
 
         except Exception as e:
+            # Check for common API errors that result in "could not generate"
+            error_message = str(e).lower()
+            if "safety" in error_message or "blocked" in error_message:
+                 print(f"Gemini API safety error: {e}")
+                 # This handles inputs like "mahad" that might be flagged as inappropriate by the model, 
+                 # which prevents the generic "Sorry, I couldn’t generate a reply" error.
+                 return "⚠️ I apologize, I cannot generate a response to that specific input. Please ask a travel-related question instead."
+            
             print(f"Gemini API error: {e}")
             return "⚠️ Sorry, I couldn’t connect to Gemini. Please try again later."
