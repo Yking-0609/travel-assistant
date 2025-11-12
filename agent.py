@@ -2,7 +2,6 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
-# Using 'detect' for the single best language prediction
 from langdetect import detect, DetectorFactory, lang_detect_exception 
 
 # Fix deterministic language detection
@@ -15,7 +14,7 @@ API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
     raise ValueError("GOOGLE_API_KEY not found. Set it in your environment variables or .env file.")
 
-# --- Configure Gemini API ---
+# --- Configure Gemini API ---\
 genai.configure(api_key=API_KEY)
 
 # --- External translation servers (for non-English fallback) ---
