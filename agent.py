@@ -2,6 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
+# Using 'detect' for the single best language prediction
 from langdetect import detect, DetectorFactory, lang_detect_exception 
 
 # Fix deterministic language detection
@@ -61,56 +62,19 @@ class GeminiAssistant:
         if not message.strip():
             return "Please enter a message."
 
-        # 🌐 Detect language dynamically
-        message_lower = message.strip().lower()
-        lang = "en" # Start with English default
+        # 🌐 SIMPLE AND STRICT Language Detection Logic
+        lang = "en" # Default to English
         
         try:
-            detected_lang = detect(message)
+            # Use 'detect' to get the single best prediction for the user's input language
+            lang = detect(message)
         except lang_detect_exception.LangDetectException:
-            detected_lang = "en" 
+            # If detection fails (e.g., short or ambiguous text like 'mahad' or just symbols),
+            # we default to 'en' to prevent incorrect replies like Somali.
+            lang = "en" 
         except Exception:
-            detected_lang = "en"
+            lang = "en"
             
-        lang = detected_lang
-
-        # 🎯 Step 1: Manual Overrides for Short, Ambiguous Inputs
-        
-        # 1a. Common English Greetings Fix (prevents 'it' / Italian)
-        english_greetings = ["hi", "hello", "hey", "hlo", "good morning", "good evening", "good afternoon"]
-        if message_lower in english_greetings:
-            lang = "en"
-        
-        # 1b. Short International Place Name Fix (Prevents Lithuanian/Nepali/Italian for names like "Nauru")
-        misclassified_foreign_codes = ["lt", "ne", "it", "tl", "sk", "sq", "ro"] 
-        if len(message) < 15 and lang in misclassified_foreign_codes and all(c.isalpha() or c.isspace() for c in message):
-             lang = "en"
-        
-        # 1c. Indian Language Ambiguity Fix (Forces 'hi' for short, non-English Indian text if classified as Nepali)
-        if lang == "ne" and len(message) < 10 and not all(c in 'abcdefghijklmnopqrstuvwxyz ' for c in message_lower):
-             lang = "hi"
-             
-        # 1d. Explicit Language Request Override (Handles cases like: "Manali in Tamil?")
-        # This is the fix for your specific question.
-        if "marathi" in message_lower:
-            lang = "mr"
-        elif "hindi" in message_lower:
-            lang = "hi"
-        elif "tamil" in message_lower:
-            lang = "ta"
-        elif "telugu" in message_lower:
-            lang = "te"
-        elif "bengali" in message_lower:
-            lang = "bn"
-        elif "kannada" in message_lower:
-            lang = "kn"
-        elif "malayalam" in message_lower:
-            lang = "ml"
-        elif "gujarati" in message_lower:
-            lang = "gu"
-        elif "english" in message_lower:
-            lang = "en"
-        
         print(f"🌍 Detected language: {lang}")
 
         # --- Prepare context and prompt ---
