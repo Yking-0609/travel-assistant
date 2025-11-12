@@ -67,12 +67,18 @@ class GeminiAssistant:
         
         try:
             # Use 'detect' to get the single best prediction for the user's input language
-            lang = detect(message)
+            detected_lang = detect(message)
+            lang = detected_lang
         except lang_detect_exception.LangDetectException:
-            # If detection fails (e.g., short or ambiguous text like 'mahad' or just symbols),
-            # we default to 'en' to prevent incorrect replies like Somali.
+            # If detection fails, we keep the default 'en'.
             lang = "en" 
         except Exception:
+            lang = "en"
+        
+        # 🎯 RULE A: HARD FILTER for Somali (so) on short, ambiguous inputs
+        # This specifically targets the 'mahad' problem.
+        if lang == "so" and len(message.split()) <= 2:
+            print("Language set to 'so' for short input. Overriding to 'en'.")
             lang = "en"
             
         print(f"🌍 Detected language: {lang}")
