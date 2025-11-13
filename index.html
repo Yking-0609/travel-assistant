@@ -17,7 +17,7 @@
       overflow: hidden;
     }
 
-    /* Full-screen world map background layer (Updated with your URL) */
+    /* Full-screen world map background layer (Updated with your URL and Faint Styling) */
     .map-background {
       position: absolute;
       top: 0; left: 0;
@@ -33,10 +33,11 @@
       background-repeat: no-repeat; /* Do not tile */
       
       /* Faintness and Cool Aesthetic */
-      opacity: 0.1; /* Adjust opacity (0.05 to 0.2 works best) */
+      opacity: 0.1; /* Very faint */
       filter: grayscale(80%) brightness(120%); /* Makes it subtle and cool */
       animation: none; /* Disable previous animation */
     }
+
 
     /* 💬 Chat Container Styles */
     .chat-container {
@@ -170,8 +171,24 @@
       transform: translateY(2px);
       box-shadow: 0 2px #cfa800;
     }
+    
+    /* NEW STYLES for Dedicated Speaker Button */
+    .speaker-button {
+      background: #4A90E2; /* Blue color for clear distinction */
+      color: white;
+      box-shadow: 0 4px #3a7ab3;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+    }
+    .speaker-button:hover {
+      background: #3a7ab3;
+    }
+    .speaker-button:active {
+      box-shadow: 0 2px #2b5c87;
+    }
 
-    /* NEW STYLES for Voice Button */
+    /* UPDATED STYLES for Microphone Button */
     .mic-button {
       background: #00CC99; /* Green/Mint */
       color: white;
@@ -231,9 +248,15 @@
     
     <div class="chat-input-area">
       <input type="text" id="userInput" placeholder="Ask about travel..." autofocus>
-      <button class="chat-button mic-button" onclick="handleVoiceAction()" id="voiceButton">
-        <i id="voiceIcon" class="fas fa-microphone"></i>
+      
+      <button class="chat-button speaker-button" onclick="toggleSpeech()" id="speechButton">
+        <i id="speechIcon" class="fas fa-volume-up"></i>
       </button>
+
+      <button class="chat-button mic-button" onclick="startListening()" id="micButton">
+        <i id="micIcon" class="fas fa-microphone"></i>
+      </button>
+
       <button class="chat-button" onclick="sendMessage()">
         <i class="fas fa-paper-plane"></i>
       </button>
@@ -244,6 +267,7 @@
   // --- Configuration and Helper Functions ---
   const API_BASE = ""; 
   let isSpeaking = false; // Global state to track if TTS is active
+  let recognition = null; // Store recognition object globally for managing STT
 
   function addMessage(text, sender, className = "") {
     const chatbox = document.getElementById("messages");
@@ -295,29 +319,49 @@
   // --- VOICE FUNCTIONALITY (STT & TTS) ---
 
   /**
-   * Updates the microphone/stop button's appearance based on state.
-   * @param {string} state - 'mic', 'stop', or 'listening'
+   * Updates the microphone button's appearance based on state.
+   * @param {string} state - 'mic', or 'listening'
    */
-  function updateVoiceButton(state) {
-      const voiceButton = document.getElementById("voiceButton");
-      const voiceIcon = document.getElementById("voiceIcon");
+  function updateMicButton(state) {
+      const micButton = document.getElementById("micButton");
+      const micIcon = document.getElementById("micIcon");
+      const inputField = document.getElementById("userInput");
       
-      if (!voiceIcon) return; // Exit if elements aren't ready
+      if (!micIcon) return;
 
-      if (state === 'stop') {
-          voiceIcon.className = 'fas fa-stop';
-          voiceButton.style.backgroundColor = '#cc0000'; // Red for Stop
-          voiceButton.style.boxShadow = '0 4px #990000';
-      } else if (state === 'mic') {
-          voiceIcon.className = 'fas fa-microphone';
-          voiceButton.style.backgroundColor = '#00CC99'; // Green/Mint for Mic
-          voiceButton.style.boxShadow = '0 4px #00a07a';
+      if (state === 'mic') {
+          micIcon.className = 'fas fa-microphone';
+          micButton.style.backgroundColor = '#00CC99';
+          micButton.style.boxShadow = '0 4px #00a07a';
+          if (!isSpeaking) inputField.placeholder = "Ask about travel...";
       } else if (state === 'listening') {
-          voiceIcon.className = 'fas fa-dot-circle fa-beat'; // Pulsing icon
-          voiceButton.style.backgroundColor = 'orange'; // Orange for Listening
-          voiceButton.style.boxShadow = '0 4px #cc8400';
+          micIcon.className = 'fas fa-dot-circle fa-beat'; // Pulsing icon
+          micButton.style.backgroundColor = 'orange';
+          micButton.style.boxShadow = '0 4px #cc8400';
+          inputField.placeholder = "LISTENING... Speak clearly now.";
       }
   }
+
+  /**
+   * Updates the speaker button's appearance based on state.
+   * @param {string} state - 'volume-up' or 'stop'
+   */
+  function updateSpeechButton(state) {
+      const speechButton = document.getElementById("speechButton");
+      const speechIcon = document.getElementById("speechIcon");
+      if (!speechIcon) return;
+
+      if (state === 'stop') {
+          speechIcon.className = 'fas fa-stop';
+          speechButton.style.backgroundColor = '#cc0000'; // Red for Stop
+          speechButton.style.boxShadow = '0 4px #990000';
+      } else if (state === 'volume-up') {
+          speechIcon.className = 'fas fa-volume-up';
+          speechButton.style.backgroundColor = '#4A90E2'; // Blue for Speaker
+          speechButton.style.boxShadow = '0 4px #3a7ab3';
+      }
+  }
+
 
   /**
    * Function to stop any ongoing speech immediately.
@@ -326,7 +370,20 @@
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
       isSpeaking = false;
-      updateVoiceButton('mic');
+      updateSpeechButton('volume-up'); // Reset to Speaker icon
+    }
+  }
+
+  /**
+   * Toggles speech on/off. Used by the dedicated speaker button.
+   */
+  function toggleSpeech() {
+    if (isSpeaking) {
+      stopSpeech();
+    } else {
+      // If the bot isn't speaking, we don't start speaking on button press
+      // The user must trigger speech via sendMessage or loadGreeting.
+      console.log("Speech not active. Pressing the button only stops active speech.");
     }
   }
 
@@ -348,13 +405,13 @@
     // Set state and update UI when speech starts
     utterance.onstart = () => {
       isSpeaking = true;
-      updateVoiceButton('stop');
+      updateSpeechButton('stop');
     };
     
     // Reset state and update UI when speech ends naturally
     utterance.onend = () => {
       isSpeaking = false;
-      updateVoiceButton('mic');
+      updateSpeechButton('volume-up');
     };
 
     window.speechSynthesis.speak(utterance);
@@ -362,7 +419,7 @@
 
 
   /**
-   * STT Function: Captures user voice (renamed to startListening).
+   * STT Function: Captures user voice. Used by the dedicated microphone button.
    */
   function startListening() {
     if (!('webkitSpeechRecognition' in window)) {
@@ -370,8 +427,11 @@
       return;
     }
     
+    // Stop any speech first
+    stopSpeech(); 
+    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    recognition = new SpeechRecognition(); 
     recognition.continuous = false; 
     recognition.interimResults = false;
     recognition.lang = 'auto'; 
@@ -379,17 +439,13 @@
     const inputField = document.getElementById("userInput");
     
     // --- UI State Changes ---
-    updateVoiceButton('listening');
-    inputField.placeholder = "LISTENING... Speak clearly now.";
-    stopSpeech(); // Ensure the assistant is quiet when the user starts speaking
-
-
+    updateMicButton('listening'); 
+    
     recognition.onresult = function(event) {
         const speechToText = event.results[0][0].transcript;
         inputField.value = speechToText;
         
-        // CRITICAL FIX: Add a small delay (50ms) to ensure speech recognition 
-        // fully shuts down before Text-to-Speech starts.
+        // Add a small delay (50ms) before sending
         setTimeout(() => {
             sendMessage(); 
         }, 50); 
@@ -410,37 +466,16 @@
         setTimeout(() => { 
             if(inputField.value === errorMsg) {
                inputField.value = "";
-               inputField.placeholder = "Ask about travel...";
             }
         }, 3000);
-        updateVoiceButton('mic'); // Reset button on error
+        updateMicButton('mic'); // Reset button on error
     };
     
     recognition.onend = function() {
-        // Only reset button/placeholder if not currently speaking
-        if (!isSpeaking) {
-            updateVoiceButton('mic'); 
-            if(inputField.value === "" || inputField.value.startsWith("🚫") || inputField.value.startsWith("🎤")) { 
-               inputField.placeholder = "Ask about travel...";
-            }
-        }
+        updateMicButton('mic'); 
     };
 
     recognition.start();
-  }
-
-
-  /**
-   * Handles the click action on the main voice button (Start Mic or Stop TTS).
-   */
-  function handleVoiceAction() {
-    if (isSpeaking) {
-      // If speaking, stop the speech
-      stopSpeech();
-    } else {
-      // If not speaking, start listening
-      startListening();
-    }
   }
 
 
@@ -500,7 +535,8 @@
       console.error(err);
       thinkingMsg.remove();
       addMessage("⚠️ Error: Could not reach server or generate response.", "bot");
-      updateVoiceButton('mic'); 
+      // Only reset mic button on error, not speaker button
+      updateMicButton('mic'); 
     }
   }
 
