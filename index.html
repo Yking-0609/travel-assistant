@@ -62,7 +62,27 @@
       z-index: 10;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.3);
+      position: relative; /* Needed for pseudo-element positioning */
+      overflow: hidden; /* Ensures background image doesn't spill */
     }
+
+    /* NEW: Faint World Map Background for Chat Container */
+    .chat-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://www.transparentpng.com/download/world/world-png-image-download-18.png'); /* Your provided image */
+      background-size: contain; /* Scales image to fit without cropping */
+      background-repeat: no-repeat;
+      background-position: center bottom; /* Adjust as needed: center, top, bottom, etc. */
+      opacity: 0.05; /* Faintness level */
+      z-index: -1; /* Place it behind other content */
+      pointer-events: none; /* Allows clicks/interactions on content above */
+    }
+
 
     /* 🖼️ Header */
     .chat-header {
@@ -75,6 +95,8 @@
       font-weight: 600;
       font-size: 1.25rem;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      position: relative; /* Ensure header content is above the pseudo-element */
+      z-index: 1;
     }
 
     /* 📝 Message Area */
@@ -82,8 +104,10 @@
       flex-grow: 1;
       overflow-y: auto;
       padding: 1rem;
-      background-color: #f8f9fa;
+      background-color: transparent; /* Make messages background transparent to see world map */
       border-bottom: 1px solid #eee;
+      position: relative; /* Ensure messages are above the pseudo-element */
+      z-index: 1;
     }
 
     /* 💬 Individual Message Styles */
@@ -141,6 +165,8 @@
       background-color: white;
       border-bottom-left-radius: 1.5rem;
       border-bottom-right-radius: 1.5rem;
+      position: relative; /* Ensure input area is above the pseudo-element */
+      z-index: 1;
     }
 
     #userInput {
