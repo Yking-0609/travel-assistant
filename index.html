@@ -465,7 +465,7 @@
       const data = await response.json();
       const welcomeText = `${data.message}`; 
       addMessage("🌍 Atlast Assistant: " + welcomeText, "bot");
-      speakResponse(welcomeText); // Speak the greeting
+      // speakResponse(welcomeText); // <-- REMOVED: No more auto-speak on load
     } catch (err) {
       console.error(err);
       addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
@@ -505,7 +505,7 @@
       addMessage("🤖 Atlast Assistant: " + formatBotMessage(botResponseText), "bot");
       
       // *** TTS Implementation: Speak the response after it's displayed ***
-      speakResponse(botResponseText);
+      // speakResponse(botResponseText); // <-- REMOVED: No more auto-speak after text input
 
     } catch (err) {
       console.error(err);
