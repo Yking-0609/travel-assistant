@@ -17,31 +17,29 @@
       overflow: hidden;
     }
 
-    /* Full-screen world map background layer (Updated with your URL and Faint Styling) */
+    /* 1. OUTER BACKGROUND: World Map */
     .map-background {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
       z-index: 1; /* Below the chat container */
 
-      /* 🎯 YOUR LIVE IMAGE URL */
+      /* YOUR LIVE IMAGE URL */
       background-image: url('https://e7.pngegg.com/pngimages/855/216/png-clipart-world-of-empires-travel-tourism-landmark-earth-building-photography.png');
       
-      /* Styling for the faint, cool effect */
-      background-size: cover; /* Cover the entire area */
-      background-position: center; /* Center the image */
-      background-repeat: no-repeat; /* Do not tile */
-      
       /* Faintness and Cool Aesthetic */
-      opacity: 0.1; /* Very faint */
-      filter: grayscale(80%) brightness(120%); /* Makes it subtle and cool */
-      animation: none; /* Disable previous animation */
+      background-size: cover; 
+      background-position: center; 
+      background-repeat: no-repeat; 
+      opacity: 0.1; 
+      filter: grayscale(80%) brightness(120%); 
+      animation: none; 
     }
 
 
     /* 💬 Chat Container Styles */
     .chat-container {
-      background: rgba(255, 255, 255, 0.95); /* Semi-transparent white to make messages visible over the map */
+      background: rgba(255, 255, 255, 0.95); 
       border-radius: 1.5rem;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       width: 90%;
@@ -49,7 +47,7 @@
       height: 90vh;
       display: flex;
       flex-direction: column;
-      z-index: 10; /* CRITICAL: Must be higher than .map-background */
+      z-index: 10; 
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
@@ -67,16 +65,40 @@
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    /* 📝 Message Area */
+    /* 📝 Message Area (The marked area) */
     #messages {
       flex-grow: 1;
       overflow-y: auto;
       padding: 1rem;
       background-color: #f8f9fa;
       border-bottom: 1px solid #eee;
+      position: relative; /* CRITICAL: To anchor the inner background image */
+    }
+    
+    /* 2. INNER BACKGROUND: Travel Quote Image (The new marked area image) */
+    #messages::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; 
+      z-index: 1; /* Below the chat messages */
+
+      /* YOUR NEW IMAGE URL */
+      background-image: url('https://media1.thehungryjpeg.com/thumbs2/ori_60815_4a9f69db2b938fc42d302d2cce2264238353f8b8_to-travel-is-to-live-more-travel.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      
+      /* FAINT AESTHETICS */
+      opacity: 0.05; /* Super faint */
+      filter: grayscale(100%) brightness(120%); 
+      background-blend-mode: multiply; 
     }
 
-    /* 💬 Individual Message Styles */
+    /* 💬 Individual Message Styles (Must be above the inner background image) */
     .message {
       padding: 0.75rem 1rem;
       margin-bottom: 0.75rem;
@@ -86,7 +108,11 @@
       line-height: 1.4;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       animation: fadeIn 0.3s ease-out;
+      position: relative; /* CRITICAL: Ensure messages layer over the ::before element (z-index 1) */
+      z-index: 2; 
     }
+    /* ... (rest of .user, .bot, .thinking-msg styles are below and are unchanged) */
+
 
     .user {
       background-color: #00AEEF;
@@ -108,6 +134,7 @@
       color: #333;
       font-style: italic;
       animation: pulse 1.5s infinite;
+      z-index: 2; /* Ensure thinking message is visible */
     }
 
     @keyframes fadeIn {
@@ -172,9 +199,9 @@
       box-shadow: 0 2px #cfa800;
     }
     
-    /* NEW STYLES for Dedicated Speaker Button */
+    /* Dedicated Speak Button */
     .speaker-button {
-      background: #4A90E2; /* Blue color for clear distinction */
+      background: #4A90E2; 
       color: white;
       box-shadow: 0 4px #3a7ab3;
       width: 44px;
@@ -188,13 +215,13 @@
       box-shadow: 0 2px #2b5c87;
     }
 
-    /* UPDATED STYLES for Microphone Button */
+    /* Dedicated Microphone Button */
     .mic-button {
-      background: #00CC99; /* Green/Mint */
+      background: #00CC99; 
       color: white;
       box-shadow: 0 4px #00a07a;
-      width: 44px; /* Fixed width for consistent look */
-      height: 44px; /* Fixed height for consistent look */
+      width: 44px; 
+      height: 44px; 
       padding: 0;
     }
     .mic-button:hover {
@@ -273,7 +300,8 @@
     const chatbox = document.getElementById("messages");
     const msg = document.createElement("div");
     msg.className = `message ${sender} ${className}`;
-    // Assign a unique attribute to bot messages for easy retrieval by the Speaker button
+    
+    // Store clean text for the Speaker button to read later
     if (sender === 'bot') {
         msg.setAttribute('data-bot-text', stripHTML(text));
     }
@@ -284,20 +312,16 @@
   }
 
   function stripHTML(html) {
-    // A simple way to remove HTML tags for cleaner TTS reading
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = html.replace(/<br>/g, ' '); // Replace <br> with space
+    tempDiv.innerHTML = html.replace(/<br>/g, ' '); 
     
-    // Remove all inner HTML elements like <i>, <ul>, etc.
     const allTags = tempDiv.querySelectorAll('*');
     allTags.forEach(tag => {
-        // Replace inner HTML elements with their text content if they exist
         if(tag.textContent) {
             tag.outerHTML = tag.textContent + ' ';
         }
     });
 
-    // Clean up the text, replacing multiple spaces with one
     return tempDiv.textContent.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
   }
 
@@ -353,7 +377,7 @@
           micButton.style.boxShadow = '0 4px #00a07a';
           if (!isSpeaking) inputField.placeholder = "Ask about travel...";
       } else if (state === 'listening') {
-          micIcon.className = 'fas fa-dot-circle fa-beat';
+          micIcon.className = 'fas fa-dot-circle fa-beat'; 
           micButton.style.backgroundColor = 'orange';
           micButton.style.boxShadow = '0 4px #cc8400';
           inputField.placeholder = "LISTENING... Speak clearly now.";
@@ -385,21 +409,18 @@
   }
 
   /**
-   * NEW FUNCTION: Initiates reading of the last bot message.
-   * This is tied directly to the Speaker button's onclick event.
+   * Reads the last bot message when the Speaker button is clicked.
    */
   function readLastMessage() {
     if (isSpeaking) {
-      stopSpeech(); // If speaking, pressing the button stops it.
+      stopSpeech(); 
       return;
     }
     
-    // Find the last message element
     const chatbox = document.getElementById("messages");
     const lastBotMessageElement = chatbox.querySelector('.bot:last-child');
     
     if (lastBotMessageElement) {
-        // Get the cleaned text using the data attribute
         const textToSpeak = lastBotMessageElement.getAttribute('data-bot-text');
         
         if (textToSpeak && textToSpeak.length > 0) {
@@ -412,7 +433,6 @@
     }
   }
 
-
   /**
    * TTS Helper: Reads the response text aloud and updates the speaking state.
    */
@@ -422,19 +442,16 @@
       return;
     }
     
-    // Stop any existing speech before starting new one
     stopSpeech(); 
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.05; 
     
-    // Set state and update UI when speech starts
     utterance.onstart = () => {
       isSpeaking = true;
       updateSpeechButton('stop');
     };
     
-    // Reset state and update UI when speech ends naturally
     utterance.onend = () => {
       isSpeaking = false;
       updateSpeechButton('volume-up');
@@ -453,7 +470,7 @@
       return;
     }
     
-    stopSpeech(); // Ensure the bot is quiet when the user speaks
+    stopSpeech(); 
     
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition(); 
@@ -463,14 +480,12 @@
 
     const inputField = document.getElementById("userInput");
     
-    // --- UI State Changes ---
     updateMicButton('listening'); 
     
     recognition.onresult = function(event) {
         const speechToText = event.results[0][0].transcript;
         inputField.value = speechToText;
         
-        // Add a small delay (50ms) before sending
         setTimeout(() => {
             sendMessage(); 
         }, 50); 
@@ -493,7 +508,7 @@
                inputField.value = "";
             }
         }, 3000);
-        updateMicButton('mic'); // Reset button on error
+        updateMicButton('mic'); 
     };
     
     recognition.onend = function() {
@@ -514,7 +529,7 @@
       const data = await response.json();
       const welcomeText = `${data.message}`; 
       
-      // *** FIX: Removed automatic speakResponse(welcomeText) here ***
+      // FIX: No automatic speaking on load.
       addMessage("🌍 Atlast Assistant: " + welcomeText, "bot");
       
     } catch (err) {
@@ -532,7 +547,6 @@
       return; 
     }
 
-    // Stop ongoing speech when user sends a new message (text or voice)
     stopSpeech(); 
 
     addMessage(userText, "user");
@@ -557,7 +571,7 @@
       // The addMessage function stores the clean text for later TTS
       addMessage("🤖 Atlast Assistant: " + formatBotMessage(botResponseText), "bot");
       
-      // *** FIX: Removed automatic speakResponse(botResponseText) here ***
+      // FIX: No automatic speaking after response. User must click speaker button.
 
     } catch (err) {
       console.error(err);
