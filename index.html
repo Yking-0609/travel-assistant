@@ -249,7 +249,7 @@
     <div class="chat-input-area">
       <input type="text" id="userInput" placeholder="Ask about travel..." autofocus>
       
-      <button class="chat-button speaker-button" onclick="toggleSpeech()" id="speechButton">
+      <button class="chat-button speaker-button" onclick="readLastMessage()" id="speechButton">
         <i id="speechIcon" class="fas fa-volume-up"></i>
       </button>
 
@@ -266,17 +266,39 @@
   <script>
   // --- Configuration and Helper Functions ---
   const API_BASE = ""; 
-  let isSpeaking = false; // Global state to track if TTS is active
-  let recognition = null; // Store recognition object globally for managing STT
+  let isSpeaking = false; 
+  let recognition = null; 
 
   function addMessage(text, sender, className = "") {
     const chatbox = document.getElementById("messages");
     const msg = document.createElement("div");
     msg.className = `message ${sender} ${className}`;
+    // Assign a unique attribute to bot messages for easy retrieval by the Speaker button
+    if (sender === 'bot') {
+        msg.setAttribute('data-bot-text', stripHTML(text));
+    }
     msg.innerHTML = text; 
     chatbox.appendChild(msg);
     chatbox.scrollTop = chatbox.scrollHeight; 
     return msg;
+  }
+
+  function stripHTML(html) {
+    // A simple way to remove HTML tags for cleaner TTS reading
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html.replace(/<br>/g, ' '); // Replace <br> with space
+    
+    // Remove all inner HTML elements like <i>, <ul>, etc.
+    const allTags = tempDiv.querySelectorAll('*');
+    allTags.forEach(tag => {
+        // Replace inner HTML elements with their text content if they exist
+        if(tag.textContent) {
+            tag.outerHTML = tag.textContent + ' ';
+        }
+    });
+
+    // Clean up the text, replacing multiple spaces with one
+    return tempDiv.textContent.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
   }
 
   function createThinkingMessage() {
@@ -318,10 +340,6 @@
 
   // --- VOICE FUNCTIONALITY (STT & TTS) ---
 
-  /**
-   * Updates the microphone button's appearance based on state.
-   * @param {string} state - 'mic', or 'listening'
-   */
   function updateMicButton(state) {
       const micButton = document.getElementById("micButton");
       const micIcon = document.getElementById("micIcon");
@@ -335,17 +353,13 @@
           micButton.style.boxShadow = '0 4px #00a07a';
           if (!isSpeaking) inputField.placeholder = "Ask about travel...";
       } else if (state === 'listening') {
-          micIcon.className = 'fas fa-dot-circle fa-beat'; // Pulsing icon
+          micIcon.className = 'fas fa-dot-circle fa-beat';
           micButton.style.backgroundColor = 'orange';
           micButton.style.boxShadow = '0 4px #cc8400';
           inputField.placeholder = "LISTENING... Speak clearly now.";
       }
   }
 
-  /**
-   * Updates the speaker button's appearance based on state.
-   * @param {string} state - 'volume-up' or 'stop'
-   */
   function updateSpeechButton(state) {
       const speechButton = document.getElementById("speechButton");
       const speechIcon = document.getElementById("speechIcon");
@@ -353,37 +367,48 @@
 
       if (state === 'stop') {
           speechIcon.className = 'fas fa-stop';
-          speechButton.style.backgroundColor = '#cc0000'; // Red for Stop
+          speechButton.style.backgroundColor = '#cc0000';
           speechButton.style.boxShadow = '0 4px #990000';
       } else if (state === 'volume-up') {
           speechIcon.className = 'fas fa-volume-up';
-          speechButton.style.backgroundColor = '#4A90E2'; // Blue for Speaker
+          speechButton.style.backgroundColor = '#4A90E2';
           speechButton.style.boxShadow = '0 4px #3a7ab3';
       }
   }
 
-
-  /**
-   * Function to stop any ongoing speech immediately.
-   */
   function stopSpeech() {
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
       isSpeaking = false;
-      updateSpeechButton('volume-up'); // Reset to Speaker icon
+      updateSpeechButton('volume-up');
     }
   }
 
   /**
-   * Toggles speech on/off. Used by the dedicated speaker button.
+   * NEW FUNCTION: Initiates reading of the last bot message.
+   * This is tied directly to the Speaker button's onclick event.
    */
-  function toggleSpeech() {
+  function readLastMessage() {
     if (isSpeaking) {
-      stopSpeech();
+      stopSpeech(); // If speaking, pressing the button stops it.
+      return;
+    }
+    
+    // Find the last message element
+    const chatbox = document.getElementById("messages");
+    const lastBotMessageElement = chatbox.querySelector('.bot:last-child');
+    
+    if (lastBotMessageElement) {
+        // Get the cleaned text using the data attribute
+        const textToSpeak = lastBotMessageElement.getAttribute('data-bot-text');
+        
+        if (textToSpeak && textToSpeak.length > 0) {
+            speakResponse(textToSpeak);
+        } else {
+            console.warn("No text found to speak in the last bot message.");
+        }
     } else {
-      // If the bot isn't speaking, we don't start speaking on button press
-      // The user must trigger speech via sendMessage or loadGreeting.
-      console.log("Speech not active. Pressing the button only stops active speech.");
+        console.warn("No bot message found to speak.");
     }
   }
 
@@ -397,7 +422,8 @@
       return;
     }
     
-    stopSpeech(); // Ensure previous speech is cancelled
+    // Stop any existing speech before starting new one
+    stopSpeech(); 
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.05; 
@@ -427,8 +453,7 @@
       return;
     }
     
-    // Stop any speech first
-    stopSpeech(); 
+    stopSpeech(); // Ensure the bot is quiet when the user speaks
     
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition(); 
@@ -488,8 +513,10 @@
       if (!response.ok) throw new Error("Server response not OK");
       const data = await response.json();
       const welcomeText = `${data.message}`; 
+      
+      // *** FIX: Removed automatic speakResponse(welcomeText) here ***
       addMessage("🌍 Atlast Assistant: " + welcomeText, "bot");
-      speakResponse(welcomeText); // Speak the greeting
+      
     } catch (err) {
       console.error(err);
       addMessage("⚠️ Could not load greeting. Is the Flask server running?", "bot");
@@ -526,16 +553,16 @@
       const botResponseText = data.response;
 
       thinkingMsg.remove();
+      
+      // The addMessage function stores the clean text for later TTS
       addMessage("🤖 Atlast Assistant: " + formatBotMessage(botResponseText), "bot");
       
-      // *** TTS Implementation: Speak the response after it's displayed ***
-      speakResponse(botResponseText);
+      // *** FIX: Removed automatic speakResponse(botResponseText) here ***
 
     } catch (err) {
       console.error(err);
       thinkingMsg.remove();
       addMessage("⚠️ Error: Could not reach server or generate response.", "bot");
-      // Only reset mic button on error, not speaker button
       updateMicButton('mic'); 
     }
   }
